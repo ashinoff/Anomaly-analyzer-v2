@@ -410,7 +410,47 @@ h2 { font-size: 1.6rem !important; }
     transform: translateY(-1px);
 }
 
-/* ========= FILE UPLOADER ========= */
+/* ========= ОТКЛЮЧАЕМ MATERIAL ICONS (если CDN заблокирован) ========= */
+/* Если Google Fonts недоступны, Streamlit показывает голые имена иконок
+   ("arrow_drop_down", "upload" и т.д.). Прячем их везде. */
+.material-icons,
+.material-icons-outlined,
+.material-symbols-outlined,
+[class*="material-icons"],
+[class*="material-symbols"],
+[data-testid="stIconMaterial"],
+[data-testid*="ToggleIcon"] {
+    font-size: 0 !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    display: inline-block !important;
+}
+
+/* Возвращаем индикатор открыт/закрыт у expander через текстовый символ */
+[data-testid="stExpander"] details > summary {
+    position: relative;
+    padding-right: 1.8rem !important;
+}
+[data-testid="stExpander"] details > summary::after {
+    content: "▾";
+    position: absolute;
+    right: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    transition: transform 0.2s;
+    visibility: visible !important;
+    width: auto !important;
+    height: auto !important;
+}
+[data-testid="stExpander"] details[open] > summary::after {
+    content: "▴";
+}
 [data-testid="stFileUploaderDropzone"] {
     background: var(--bg-soft) !important;
     border: 2px dashed var(--blue-light) !important;
@@ -423,25 +463,55 @@ h2 { font-size: 1.6rem !important; }
     border-color: var(--navy) !important;
     background: #FFFFFF !important;
 }
-/* Кнопка "Browse files" — без uppercase и без condensed-шрифта,
-   чтобы текст помещался даже при долгих переводах */
+/* Кнопка "Browse files / Upload" — заменяем текст на «Загрузить файл» */
 [data-testid="stFileUploaderDropzone"] button {
     background: var(--navy) !important;
     color: #FFFFFF !important;
     border: none !important;
     font-family: 'Manrope', sans-serif !important;
     font-weight: 500 !important;
-    font-size: 0.9rem !important;
+    font-size: 0 !important;          /* прячем оригинальный текст */
+    line-height: 1 !important;
     text-transform: none !important;
     letter-spacing: 0 !important;
-    padding: 0.55rem 1.2rem !important;
-    min-width: 130px;
+    padding: 0.6rem 1.2rem !important;
+    min-width: 150px;
     white-space: nowrap !important;
 }
-/* Спрятать иконку material-icons если она не загрузилась
-   (на корп. сетях Google Fonts иногда блокируется) */
-[data-testid="stFileUploaderDropzone"] [class*="material-icons"]:empty,
-[data-testid="stFileUploaderDropzone"] svg:not([role]) {
+[data-testid="stFileUploaderDropzone"] button::after {
+    content: "Загрузить файл";
+    display: inline-block;
+    font-size: 0.92rem !important;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 500;
+    color: #FFFFFF;
+}
+
+/* Заменяем текст-инструкцию ("Drag and drop file here / Limit X / XLSX, XLS")
+   на собственный русский — без зависимости от material-icons */
+[data-testid="stFileUploaderDropzoneInstructions"] {
+    font-size: 0 !important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"]::before {
+    content: "Перетащите Excel-файл сюда или нажмите кнопку справа";
+    display: block;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text);
+}
+[data-testid="stFileUploaderDropzoneInstructions"]::after {
+    content: "Поддерживается: XLSX, XLS — до 200 МБ";
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 0.4rem;
+    letter-spacing: 0.05em;
+}
+/* Прячем все иконки внутри drop-zone (svg или material-icons) */
+[data-testid="stFileUploaderDropzone"] svg,
+[data-testid="stFileUploaderDropzone"] [class*="material"] {
     display: none !important;
 }
 
@@ -596,15 +666,38 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =====================================================================
-# ЗАГРУЗКА
+# ЗАГРУЗКА + СКАЧИВАНИЕ ОТЧЁТА (две колонки рядом)
 # =====================================================================
-uploaded = st.file_uploader(
-    "Excel-файл с потреблением",
-    type=['xlsx', 'xls'],
-    label_visibility="collapsed",
-)
+@st.cache_data(show_spinner="Читаю файл…")
+def load_excel(file_bytes):
+    return pd.read_excel(io.BytesIO(file_bytes))
 
+@st.cache_data(show_spinner="Анализирую…")
+def run_analysis(file_bytes, config):
+    df = load_excel(file_bytes)
+    return df, *analyze(df, config)
+
+upload_col, download_col = st.columns([3, 1])
+
+with upload_col:
+    uploaded = st.file_uploader(
+        "Excel-файл с потреблением",
+        type=['xlsx', 'xls'],
+        label_visibility="collapsed",
+    )
+
+# Если файл не загружен — заглушка и стоп
 if not uploaded:
+    with download_col:
+        st.markdown(
+            '<div style="height:100%;display:flex;align-items:center;'
+            'justify-content:center;color:var(--text-faint);font-family:JetBrains Mono;'
+            'font-size:0.7rem;text-transform:uppercase;letter-spacing:0.18em;'
+            'border:1px dashed var(--border);padding:1.2rem;text-align:center;'
+            'min-height:90px;">Отчёт появится<br/>после загрузки</div>',
+            unsafe_allow_html=True
+        )
+
     st.markdown("""
     <div class="empty-state">
       Перетащите выгрузку выше, чтобы начать анализ
@@ -631,23 +724,29 @@ if not uploaded:
         """)
     st.stop()
 
-# =====================================================================
-# АНАЛИЗ
-# =====================================================================
-@st.cache_data(show_spinner="Читаю файл…")
-def load_excel(file_bytes):
-    return pd.read_excel(io.BytesIO(file_bytes))
-
-@st.cache_data(show_spinner="Анализирую…")
-def run_analysis(file_bytes, config):
-    df = load_excel(file_bytes)
-    return df, *analyze(df, config)
-
+# Файл загружен — анализируем
 try:
     df_raw, registry, base, flags, report = run_analysis(uploaded.getvalue(), config)
 except ValueError as e:
-    st.error(f"❌ {e}")
+    st.error(f"Ошибка: {e}")
     st.stop()
+
+# Готовим сводный отчёт и сразу же показываем кнопку скачивания
+full_report_bytes = build_full_report(
+    df_raw, registry, base, flags, report, config,
+    FLAG_TITLES, FLAG_EMOJI, METRIC_LABELS,
+    detect_month_columns(df_raw),
+)
+
+with download_col:
+    st.download_button(
+        "Скачать отчёт",
+        data=full_report_bytes,
+        file_name=f"анализ_потребления_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        help="Сводный Excel: листы со сводкой, реестром, потреблением, по флагам и настройками",
+        use_container_width=True,
+    )
 
 # =====================================================================
 # ЛЕНТА МЕТРИК
@@ -806,32 +905,13 @@ with tab_registry:
     with pd.ExcelWriter(excel_buf, engine='openpyxl') as w:
         display_view.to_excel(w, index=False, sheet_name='Реестр')
 
-    # Полный отчёт (все листы, все абоненты с флагами)
-    full_report_bytes = build_full_report(
-        df_raw, registry, base, flags, report, config,
-        FLAG_TITLES, FLAG_EMOJI, METRIC_LABELS,
-        detect_month_columns(df_raw),
+    st.download_button(
+        "Скачать только текущую выборку",
+        data=excel_buf.getvalue(),
+        file_name=f"выборка_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        help="Только то, что отфильтровано выше. Сводный отчёт по всем флагам — кнопкой наверху страницы.",
     )
-
-    dl1, dl2 = st.columns(2)
-    with dl1:
-        st.download_button(
-            "Сводный отчёт (Excel)",
-            data=full_report_bytes,
-            file_name=f"анализ_потребления_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            help="Полный отчёт: сводка, реестр, потребление по флагам, отдельные листы по каждому флагу, настройки",
-            use_container_width=True,
-        )
-    with dl2:
-        st.download_button(
-            "Только текущая выборка",
-            data=excel_buf.getvalue(),
-            file_name=f"выборка_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            help="Только то, что отфильтровано выше",
-            use_container_width=True,
-        )
 
 # ----- АБОНЕНТ -----
 with tab_detail:
