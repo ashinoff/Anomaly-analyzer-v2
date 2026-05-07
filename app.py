@@ -160,13 +160,20 @@ h2 { font-size: 1.6rem !important; }
     border-color: transparent var(--blue-light) transparent transparent;
     opacity: 0.7;
 }
-/* МАКСИМАЛЬНАЯ специфичность — заголовок гарантированно белый,
-   побеждаем любое правило h1/h2/h3 от Streamlit или нашего общего */
+/* === BUILD v5 === */
+/* ВЕСЬ заголовок белый — включая «аномального». Каждый возможный селектор. */
+.stApp .hero,
 .stApp .hero h1,
 .stApp .hero .hero-title,
 .stApp div.hero h1.hero-title,
-div.hero > h1,
-div.hero > h1 *:not(.hero-em) {
+.stApp .hero .hero-title *,
+div.hero h1,
+div.hero h1 *,
+.hero h1,
+.hero h1 *,
+.hero-title,
+.hero-title *,
+.hero-em {
     color: #FFFFFF !important;
 }
 .hero-title {
@@ -176,15 +183,13 @@ div.hero > h1 *:not(.hero-em) {
     letter-spacing: 0.005em;
     line-height: 0.96;
     margin: 0;
-    color: #FFFFFF !important;
     text-transform: uppercase;
     position: relative;
     z-index: 2;
 }
-.hero-title em, .hero-title span.hero-em, .hero .hero-em {
+.hero-em {
     font-style: normal;
     font-weight: 300;
-    color: #B8D4ED !important;
     border-bottom: 4px solid #C8102E;
     padding-bottom: 2px;
 }
@@ -484,119 +489,146 @@ div.hero > h1 *:not(.hero-em) {
     border-color: var(--navy) !important;
     background: #FFFFFF !important;
 }
-/* Кнопка "Browse files / Upload" — ТОЛЬКО прямой потомок dropzone, не вложенная.
-   Если использовать просто [stFileUploaderDropzone] button, селектор может
-   зацепить кнопку крестика в блоке загруженного файла, и появится "Загрузить файл" дважды. */
+/* === КНОПКА «Загрузить» — text-indent trick =================
+   Прячем оригинальное содержимое за экран (text-indent: -9999px),
+   а наш текст рисуем поверх через ::after с position: absolute.
+   Этот способ работает независимо от вложенной структуры Streamlit. */
 section[data-testid="stFileUploaderDropzone"] > button,
 [data-testid="stFileUploaderDropzone"] > button {
-    background: var(--navy) !important;
+    background: #1F3868 !important;
     color: #FFFFFF !important;
     border: none !important;
-    font-family: 'Manrope', sans-serif !important;
-    font-weight: 500 !important;
-    font-size: 0 !important;          /* прячем оригинальный текст */
-    line-height: 1 !important;
-    text-transform: none !important;
-    letter-spacing: 0 !important;
-    padding: 0.6rem 1.2rem !important;
-    min-width: 150px;
+    padding: 0 !important;
+    width: 140px !important;
+    height: 40px !important;
+    min-width: 140px !important;
+    position: relative !important;
+    text-indent: -9999px !important;
+    overflow: hidden !important;
     white-space: nowrap !important;
+    border-radius: 2px !important;
+    cursor: pointer !important;
 }
 section[data-testid="stFileUploaderDropzone"] > button::after,
 [data-testid="stFileUploaderDropzone"] > button::after {
-    content: "Загрузить файл";
-    display: inline-block;
-    font-size: 0.92rem !important;
-    font-family: 'Manrope', sans-serif;
-    font-weight: 500;
-    color: #FFFFFF;
+    content: "Загрузить";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+    text-indent: 0 !important;
+    letter-spacing: 0.02em;
 }
-/* На случай старой структуры со span внутри: спрятать его текст */
-section[data-testid="stFileUploaderDropzone"] > button > * {
-    font-size: 0 !important;
-    visibility: hidden !important;
-}
-section[data-testid="stFileUploaderDropzone"] > button::after {
-    visibility: visible !important;
+section[data-testid="stFileUploaderDropzone"] > button:hover,
+[data-testid="stFileUploaderDropzone"] > button:hover {
+    background: #C8102E !important;
 }
 
-/* Заменяем текст-инструкцию ("Drag and drop file here / Limit X / XLSX, XLS")
-   на собственный русский — без зависимости от material-icons */
+/* === ТЕКСТ-ПОДСКАЗКА в drop zone (Drag and drop / Limit ...) === */
 [data-testid="stFileUploaderDropzoneInstructions"] {
     font-size: 0 !important;
+    position: relative !important;
 }
-[data-testid="stFileUploaderDropzoneInstructions"]::before {
-    content: "Перетащите Excel-файл сюда или нажмите кнопку справа";
-    display: block;
-    font-family: 'Manrope', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: var(--text);
-}
-[data-testid="stFileUploaderDropzoneInstructions"]::after {
-    content: "Поддерживается: XLSX, XLS — до 200 МБ";
-    display: block;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    margin-top: 0.4rem;
-    letter-spacing: 0.05em;
-}
-/* Прячем все иконки внутри drop-zone (svg или material-icons) */
-[data-testid="stFileUploaderDropzone"] svg,
-[data-testid="stFileUploaderDropzone"] [class*="material"] {
+[data-testid="stFileUploaderDropzoneInstructions"] > * {
     display: none !important;
 }
-
-/* ========= ЗАГРУЖЕННЫЙ ФАЙЛ (после загрузки) ========= */
-/* Блок с именем файла, его размером и кнопкой-крестиком для удаления.
-   Делаем крестик видимым через ::after (символ ✕), даже если material-icons не загружен. */
-[data-testid="stFileUploaderFile"],
-[data-testid="stFileUploaderFileData"] {
-    background: var(--bg-soft);
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    padding: 0.5rem 0.8rem;
-}
-[data-testid="stFileUploaderFile"] button,
-[data-testid="stFileUploaderDeleteBtn"] button {
-    background: transparent !important;
-    color: var(--red) !important;
-    border: 1px solid var(--border) !important;
+[data-testid="stFileUploaderDropzoneInstructions"]::before {
+    content: "Перетащите Excel-файл сюда или нажмите «Загрузить» справа";
+    display: block !important;
     font-family: 'Manrope', sans-serif !important;
-    font-size: 0 !important;
-    text-transform: none !important;
-    letter-spacing: 0 !important;
-    padding: 0.35rem 0.6rem !important;
-    min-width: 0 !important;
-    line-height: 1 !important;
-    border-radius: 2px !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    color: #1A1F2C !important;
+    text-indent: 0 !important;
 }
-[data-testid="stFileUploaderFile"] button::after,
-[data-testid="stFileUploaderDeleteBtn"] button::after {
-    content: "✕ Удалить";
-    display: inline-block;
-    font-size: 0.78rem !important;
-    font-weight: 500;
-    color: var(--red);
+[data-testid="stFileUploaderDropzoneInstructions"]::after {
+    content: "XLSX, XLS — до 200 МБ";
+    display: block !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.72rem !important;
+    color: #5A6478 !important;
+    margin-top: 0.4rem;
+    letter-spacing: 0.05em;
+    text-indent: 0 !important;
+}
+
+/* === БЛОК ЗАГРУЖЕННОГО ФАЙЛА + ВИДИМЫЙ КРЕСТИК «✕» ============= */
+/* Сначала возвращаем материальные иконки/svg в этом блоке к жизни,
+   потому что общий material-icons hide их выключил */
+[data-testid="stFileUploader"] svg,
+[data-testid="stFileUploaderFile"] *,
+[data-testid="stFileUploaderUploadedFile"] *,
+[data-testid="stFileUploaderDeleteBtn"] * {
     visibility: visible !important;
 }
-[data-testid="stFileUploaderFile"] button:hover,
-[data-testid="stFileUploaderDeleteBtn"] button:hover {
-    background: var(--red) !important;
-    border-color: var(--red) !important;
+
+[data-testid="stFileUploaderFile"],
+[data-testid="stFileUploaderUploadedFile"] {
+    background: #F4F6FA !important;
+    border: 1px solid #E1E5EB !important;
+    border-radius: 2px !important;
+    padding: 0.5rem 0.8rem !important;
+    margin-top: 0.5rem !important;
+    display: flex !important;
+    align-items: center !important;
 }
-[data-testid="stFileUploaderFile"] button:hover::after,
-[data-testid="stFileUploaderDeleteBtn"] button:hover::after {
-    color: #FFFFFF !important;
+
+/* Кнопка удаления — text-indent trick + ✕ через ::after */
+[data-testid="stFileUploaderDeleteBtn"],
+button[data-testid="stFileUploaderDeleteBtn"],
+[data-testid="stFileUploaderFile"] button,
+[data-testid="stFileUploaderUploadedFile"] button {
+    visibility: visible !important;
+    display: inline-flex !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    padding: 0 !important;
+    margin-left: 8px !important;
+    background: transparent !important;
+    border: 1px solid #C8102E !important;
+    border-radius: 2px !important;
+    color: #C8102E !important;
+    position: relative !important;
+    text-indent: -9999px !important;
+    overflow: hidden !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
 }
-/* В новой кнопке текст внутри child-нодов — прячем (чтобы не было дубля) */
+[data-testid="stFileUploaderDeleteBtn"] *,
 [data-testid="stFileUploaderFile"] button > *,
-[data-testid="stFileUploaderDeleteBtn"] button > * {
-    font-size: 0 !important;
-    visibility: hidden !important;
-    width: 0 !important;
-    height: 0 !important;
+[data-testid="stFileUploaderUploadedFile"] button > * {
+    display: none !important;
+}
+[data-testid="stFileUploaderDeleteBtn"]::after,
+[data-testid="stFileUploaderFile"] button::after,
+[data-testid="stFileUploaderUploadedFile"] button::after {
+    content: "✕";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    color: #C8102E !important;
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    text-indent: 0 !important;
+    visibility: visible !important;
+}
+[data-testid="stFileUploaderDeleteBtn"]:hover,
+[data-testid="stFileUploaderFile"] button:hover,
+[data-testid="stFileUploaderUploadedFile"] button:hover {
+    background: #C8102E !important;
+}
+[data-testid="stFileUploaderDeleteBtn"]:hover::after,
+[data-testid="stFileUploaderFile"] button:hover::after,
+[data-testid="stFileUploaderUploadedFile"] button:hover::after {
+    color: #FFFFFF !important;
 }
 
 /* dataframe */
