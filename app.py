@@ -160,6 +160,15 @@ h2 { font-size: 1.6rem !important; }
     border-color: transparent var(--blue-light) transparent transparent;
     opacity: 0.7;
 }
+/* МАКСИМАЛЬНАЯ специфичность — заголовок гарантированно белый,
+   побеждаем любое правило h1/h2/h3 от Streamlit или нашего общего */
+.stApp .hero h1,
+.stApp .hero .hero-title,
+.stApp div.hero h1.hero-title,
+div.hero > h1,
+div.hero > h1 *:not(.hero-em) {
+    color: #FFFFFF !important;
+}
 .hero-title {
     font-family: 'Barlow Condensed', sans-serif !important;
     font-weight: 800;
@@ -172,7 +181,7 @@ h2 { font-size: 1.6rem !important; }
     position: relative;
     z-index: 2;
 }
-.hero-title em, .hero-title span.hero-em {
+.hero-title em, .hero-title span.hero-em, .hero .hero-em {
     font-style: normal;
     font-weight: 300;
     color: #B8D4ED !important;
@@ -392,7 +401,10 @@ h2 { font-size: 1.6rem !important; }
 }
 
 /* ========= КНОПКИ ========= */
-.stDownloadButton button, .stButton button {
+.stDownloadButton button, .stButton button,
+[data-testid="stDownloadButton"] button,
+[data-testid="stBaseButton-secondary"],
+[data-testid="stBaseButton-primary"] {
     background: var(--navy) !important;
     color: #FFFFFF !important;
     border: none !important;
@@ -405,7 +417,16 @@ h2 { font-size: 1.6rem !important; }
     border-radius: 2px !important;
     transition: background 0.15s, transform 0.1s;
 }
-.stDownloadButton button:hover, .stButton button:hover {
+/* белый текст также для всех потомков (p, span, div внутри button) */
+.stDownloadButton button *, .stButton button *,
+[data-testid="stDownloadButton"] button *,
+[data-testid="stDownloadButton"] button p,
+[data-testid="stDownloadButton"] button span,
+[data-testid="stDownloadButton"] button div {
+    color: #FFFFFF !important;
+}
+.stDownloadButton button:hover, .stButton button:hover,
+[data-testid="stDownloadButton"] button:hover {
     background: var(--red) !important;
     transform: translateY(-1px);
 }
@@ -463,8 +484,11 @@ h2 { font-size: 1.6rem !important; }
     border-color: var(--navy) !important;
     background: #FFFFFF !important;
 }
-/* Кнопка "Browse files / Upload" — заменяем текст на «Загрузить файл» */
-[data-testid="stFileUploaderDropzone"] button {
+/* Кнопка "Browse files / Upload" — ТОЛЬКО прямой потомок dropzone, не вложенная.
+   Если использовать просто [stFileUploaderDropzone] button, селектор может
+   зацепить кнопку крестика в блоке загруженного файла, и появится "Загрузить файл" дважды. */
+section[data-testid="stFileUploaderDropzone"] > button,
+[data-testid="stFileUploaderDropzone"] > button {
     background: var(--navy) !important;
     color: #FFFFFF !important;
     border: none !important;
@@ -478,13 +502,22 @@ h2 { font-size: 1.6rem !important; }
     min-width: 150px;
     white-space: nowrap !important;
 }
-[data-testid="stFileUploaderDropzone"] button::after {
+section[data-testid="stFileUploaderDropzone"] > button::after,
+[data-testid="stFileUploaderDropzone"] > button::after {
     content: "Загрузить файл";
     display: inline-block;
     font-size: 0.92rem !important;
     font-family: 'Manrope', sans-serif;
     font-weight: 500;
     color: #FFFFFF;
+}
+/* На случай старой структуры со span внутри: спрятать его текст */
+section[data-testid="stFileUploaderDropzone"] > button > * {
+    font-size: 0 !important;
+    visibility: hidden !important;
+}
+section[data-testid="stFileUploaderDropzone"] > button::after {
+    visibility: visible !important;
 }
 
 /* Заменяем текст-инструкцию ("Drag and drop file here / Limit X / XLSX, XLS")
@@ -513,6 +546,57 @@ h2 { font-size: 1.6rem !important; }
 [data-testid="stFileUploaderDropzone"] svg,
 [data-testid="stFileUploaderDropzone"] [class*="material"] {
     display: none !important;
+}
+
+/* ========= ЗАГРУЖЕННЫЙ ФАЙЛ (после загрузки) ========= */
+/* Блок с именем файла, его размером и кнопкой-крестиком для удаления.
+   Делаем крестик видимым через ::after (символ ✕), даже если material-icons не загружен. */
+[data-testid="stFileUploaderFile"],
+[data-testid="stFileUploaderFileData"] {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 0.5rem 0.8rem;
+}
+[data-testid="stFileUploaderFile"] button,
+[data-testid="stFileUploaderDeleteBtn"] button {
+    background: transparent !important;
+    color: var(--red) !important;
+    border: 1px solid var(--border) !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 0 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    padding: 0.35rem 0.6rem !important;
+    min-width: 0 !important;
+    line-height: 1 !important;
+    border-radius: 2px !important;
+}
+[data-testid="stFileUploaderFile"] button::after,
+[data-testid="stFileUploaderDeleteBtn"] button::after {
+    content: "✕ Удалить";
+    display: inline-block;
+    font-size: 0.78rem !important;
+    font-weight: 500;
+    color: var(--red);
+    visibility: visible !important;
+}
+[data-testid="stFileUploaderFile"] button:hover,
+[data-testid="stFileUploaderDeleteBtn"] button:hover {
+    background: var(--red) !important;
+    border-color: var(--red) !important;
+}
+[data-testid="stFileUploaderFile"] button:hover::after,
+[data-testid="stFileUploaderDeleteBtn"] button:hover::after {
+    color: #FFFFFF !important;
+}
+/* В новой кнопке текст внутри child-нодов — прячем (чтобы не было дубля) */
+[data-testid="stFileUploaderFile"] button > *,
+[data-testid="stFileUploaderDeleteBtn"] button > * {
+    font-size: 0 !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 /* dataframe */
