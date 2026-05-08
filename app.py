@@ -449,32 +449,38 @@ h2 { font-size: 1.6rem !important; }
 section[data-testid="stFileUploaderDropzone"] > button,
 [data-testid="stFileUploaderDropzone"] > button {
     background: var(--ink) !important;
-    color: var(--paper) !important;
+    color: transparent !important;
     border: none !important;
     padding: 0 !important;
     width: 150px !important;
     height: 42px !important;
     min-width: 150px !important;
     position: relative !important;
-    text-indent: -9999px !important;
     overflow: hidden !important;
     border-radius: 0 !important;
     cursor: pointer !important;
+    font-size: 0 !important;
+}
+section[data-testid="stFileUploaderDropzone"] > button > *,
+[data-testid="stFileUploaderDropzone"] > button > * {
+    visibility: hidden !important;
 }
 section[data-testid="stFileUploaderDropzone"] > button::after,
 [data-testid="stFileUploaderDropzone"] > button::after {
-    content: "ЗАГРУЗИТЬ →";
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    content: "ЗАГРУЗИТЬ" !important;
+    position: absolute !important;
+    inset: 0 !important;
     display: flex !important;
-    align-items: center;
-    justify-content: center;
-    color: var(--paper) !important;
-    font-family: var(--mono) !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #FBF8F1 !important;
+    font-family: 'JetBrains Mono', ui-monospace, monospace !important;
     font-weight: 500 !important;
-    font-size: 0.7rem !important;
-    text-indent: 0 !important;
-    letter-spacing: 0.18em;
+    font-size: 11px !important;
+    letter-spacing: 0.18em !important;
+    z-index: 2 !important;
+    pointer-events: none !important;
+    visibility: visible !important;
 }
 section[data-testid="stFileUploaderDropzone"] > button:hover,
 [data-testid="stFileUploaderDropzone"] > button:hover {
