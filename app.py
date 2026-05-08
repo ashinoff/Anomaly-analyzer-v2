@@ -695,7 +695,7 @@ PURPLE = PLUM
 # =====================================================================
 with st.sidebar:
     st.markdown("# Настройки")
-    st.markdown('<div style="color:var(--ink-dim);font-family:'Instrument Serif',serif;font-style:italic;font-size:0.95rem;margin-bottom:1.2rem;">Подкручивайте — таблица пересчитается.</div>', unsafe_allow_html=True)
+    st.markdown('<div style="color:var(--ink-dim);font-family:var(--display);font-style:italic;font-size:0.95rem;margin-bottom:1.2rem;">Подкручивайте — таблица пересчитается.</div>', unsafe_allow_html=True)
 
     with st.expander("Хищение", expanded=True):
         cfg_theft_drop = st.slider("Падение, %", 20, 95, 50, 5) / 100
