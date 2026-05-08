@@ -1,0 +1,1758 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1480" />
+<title>Анализ потребления — редизайн</title>
+<style>
+/* ============================================================
+   ANALYZER · Editorial data publication
+   Type: Instrument Serif (display) · Geist (text) · JetBrains Mono (data)
+   Palette: bone bg · ink fg · single rust accent · moss for ok
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bone:        #F2EDE2;
+  --bone-deep:   #ECE5D5;
+  --paper:       #FBF8F1;
+  --ink:         #181513;
+  --ink-soft:    #3A332C;
+  --ink-dim:     #6F6557;
+  --ink-faint:   #A89E8C;
+  --rule:        #D4CCBA;
+  --rule-soft:   #E2DBC8;
+
+  --rust:        #B5432C;
+  --rust-deep:   #8C2F1E;
+  --rust-soft:   #F2D9CF;
+  --moss:        #5A6B3D;
+  --moss-soft:   #DCE2C8;
+  --amber:       #C7873A;
+  --plum:        #6B3F5F;
+  --slate:       #4A5A6B;
+
+  --display: 'Instrument Serif', 'Times New Roman', serif;
+  --sans: 'Geist', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bone);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   Layout shell
+   ============================================================ */
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+}
+
+.sidebar {
+  background: var(--bone-deep);
+  border-right: 1px solid var(--rule);
+  padding: 28px 24px 40px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.main {
+  padding: 0 56px 80px;
+  max-width: 1400px;
+  width: 100%;
+}
+
+/* ============================================================
+   Typography primitives
+   ============================================================ */
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+}
+
+.eyebrow-rust { color: var(--rust); }
+.eyebrow-moss { color: var(--moss); }
+
+.display-h {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  line-height: 0.95;
+  margin: 0;
+}
+
+.section-rule {
+  border: 0;
+  border-top: 1px solid var(--ink);
+  margin: 0 0 16px;
+}
+
+.section-rule.thin {
+  border-top: 1px solid var(--rule);
+}
+
+.dotted-rule {
+  border: 0;
+  border-top: 1px dashed var(--rule);
+  margin: 12px 0;
+}
+
+/* ============================================================
+   Masthead — newspaper-style top strip
+   ============================================================ */
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 14px 0 12px;
+  margin: 24px 0 36px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+}
+
+.masthead .brand {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.masthead .brand-mark {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-transform: none;
+}
+
+.masthead .brand-tag {
+  border-left: 1px solid var(--rule);
+  padding-left: 14px;
+}
+
+.masthead .meta {
+  display: flex;
+  gap: 28px;
+}
+
+.masthead .meta b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ============================================================
+   Hero — headline block
+   ============================================================ */
+.hero {
+  padding: 12px 0 36px;
+  border-bottom: 1px solid var(--ink);
+  margin-bottom: 28px;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 48px;
+  align-items: end;
+}
+
+.hero h1 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(56px, 7vw, 96px);
+  line-height: 0.92;
+  letter-spacing: -0.012em;
+  margin: 0;
+  color: var(--ink);
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--rust);
+}
+
+.hero .deck {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 19px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  border-left: 2px solid var(--ink);
+  padding: 4px 0 4px 16px;
+}
+
+/* ============================================================
+   KPI strip
+   ============================================================ */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  margin: 28px 0 36px;
+}
+
+.kpi-cell {
+  padding: 22px 24px 24px;
+  border-right: 1px solid var(--rule);
+  position: relative;
+}
+
+.kpi-cell:last-child { border-right: none; }
+
+.kpi-cell .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kpi-cell .label .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.kpi-cell.rust .label .dot { background: var(--rust); }
+.kpi-cell.amber .label .dot { background: var(--amber); }
+.kpi-cell.moss  .label .dot { background: var(--moss); }
+
+.kpi-cell .value {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  margin-top: 18px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-cell.rust .value { color: var(--rust); }
+.kpi-cell.amber .value { color: var(--amber); }
+.kpi-cell.moss .value { color: var(--moss); }
+
+.kpi-cell .sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-dim);
+  margin-top: 10px;
+  letter-spacing: 0.06em;
+}
+
+.kpi-cell .sub b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ============================================================
+   Sidebar — controls
+   ============================================================ */
+.sidebar h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 30px;
+  margin: 0 0 4px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.sidebar .deck-line {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin-bottom: 22px;
+}
+
+.thresh-group {
+  border-top: 1px solid var(--ink);
+  padding: 14px 0 16px;
+}
+.thresh-group:last-of-type { border-bottom: 1px solid var(--ink); }
+
+.thresh-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+.thresh-head .glyph {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink);
+}
+.thresh-head .title {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  flex: 1;
+  margin-left: 10px;
+}
+.thresh-head .caret {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+}
+
+.thresh-body {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.knob {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.knob .knob-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+}
+
+.knob .knob-row b {
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* slider */
+.knob input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 2px;
+  background: var(--rule);
+  border: 0;
+  outline: none;
+}
+.knob input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--bone-deep);
+  cursor: pointer;
+}
+.knob input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--bone-deep);
+  cursor: pointer;
+}
+
+/* ============================================================
+   Upload zone
+   ============================================================ */
+.upload-row {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  margin-bottom: 36px;
+}
+
+.dropzone {
+  border: 1.5px dashed var(--ink);
+  background: var(--paper);
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+}
+.dropzone:hover {
+  background: #fff;
+  border-color: var(--rust);
+}
+
+.dropzone .dz-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dropzone .dz-title {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.dropzone .dz-hint {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+}
+
+.btn {
+  background: var(--ink);
+  color: var(--paper);
+  border: 0;
+  padding: 14px 22px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--rust); color: #fff; }
+.btn .arrow { font-family: var(--mono); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+}
+.btn-ghost:hover { background: var(--ink); color: var(--paper); }
+
+.report-card {
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.report-card .rc-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+}
+.report-card .rc-title {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.05;
+  color: var(--ink);
+}
+.report-card .btn {
+  margin-top: 4px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* empty */
+.empty-pull {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 60px 0 80px;
+  text-align: center;
+  margin-top: 36px;
+}
+.empty-pull .figure {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 88px;
+  line-height: 1;
+  color: var(--rust);
+  letter-spacing: -0.02em;
+}
+.empty-pull .quote {
+  font-family: var(--display);
+  font-size: 28px;
+  line-height: 1.25;
+  color: var(--ink);
+  max-width: 640px;
+  margin: 24px auto 0;
+}
+.empty-pull .source {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+  margin-top: 22px;
+}
+
+/* ============================================================
+   Tabs
+   ============================================================ */
+.tabs {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid var(--ink);
+  margin: 0 0 28px;
+  padding: 0;
+}
+.tabs button {
+  background: transparent;
+  border: 0;
+  padding: 14px 0 14px;
+  margin-bottom: -1px;
+  font-family: var(--display);
+  font-size: 24px;
+  letter-spacing: -0.005em;
+  color: var(--ink-dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  font-weight: 400;
+}
+.tabs button:hover { color: var(--ink); }
+.tabs button.active {
+  color: var(--ink);
+  border-bottom-color: var(--rust);
+}
+.tabs button .num {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  margin-right: 8px;
+  color: var(--ink-faint);
+  vertical-align: middle;
+}
+.tabs button.active .num { color: var(--rust); }
+
+/* Part 2: tabs/registry/detail/charts/flags */
+
+/* ============================================================
+   Two-column section header
+   ============================================================ */
+.sec-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin: 12px 0 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ink);
+}
+.sec-head .sec-title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+}
+.sec-head .sec-title em {
+  font-style: italic;
+  color: var(--rust);
+}
+.sec-head .sec-meta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+  text-align: right;
+  line-height: 1.7;
+}
+.sec-head .sec-meta b { color: var(--ink); font-weight: 600; }
+
+/* ============================================================
+   Charts
+   ============================================================ */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  margin-bottom: 36px;
+}
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chart-card .ch-eyebrow {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--rust);
+}
+.chart-card .ch-title {
+  font-family: var(--display);
+  font-size: 26px;
+  line-height: 1.05;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 10px;
+}
+
+/* ============================================================
+   Registry table
+   ============================================================ */
+.filter-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 14px 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.filter-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filter-cell .flabel {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+}
+.filter-cell .fcontrol {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.chip:hover { border-color: var(--ink); }
+.chip.active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+.chip .glyph { color: var(--rust); }
+.chip.active .glyph { color: var(--rust-soft); }
+
+.input-num {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  width: 100px;
+}
+.input-num:focus { outline: none; border-color: var(--ink); }
+
+.tally {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+  margin: 0 0 12px;
+}
+.tally b { color: var(--rust); font-weight: 600; }
+
+/* registry table */
+.reg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--sans);
+  font-size: 12.5px;
+}
+.reg-table thead th {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-dim);
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--bone);
+  white-space: nowrap;
+}
+.reg-table thead th.num { text-align: right; }
+.reg-table tbody td {
+  padding: 12px 12px;
+  border-bottom: 1px dashed var(--rule);
+  vertical-align: middle;
+  color: var(--ink-soft);
+}
+.reg-table tbody tr:hover td { background: var(--paper); color: var(--ink); }
+.reg-table .num { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.reg-table .id-col { font-family: var(--mono); font-size: 11px; color: var(--ink-dim); }
+.reg-table .name-col { font-weight: 500; color: var(--ink); }
+.reg-table .addr-col { color: var(--ink-dim); font-size: 11.5px; }
+
+.flag-pill-row {
+  display: inline-flex;
+  gap: 4px;
+}
+.flag-pill {
+  width: 22px; height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bone-deep);
+  color: var(--ink-faint);
+  border: 1px solid var(--rule);
+}
+.flag-pill.on {
+  color: #fff;
+  background: var(--rust);
+  border-color: var(--rust);
+}
+.flag-pill.on.amber { background: var(--amber); border-color: var(--amber); }
+.flag-pill.on.plum  { background: var(--plum); border-color: var(--plum); }
+.flag-pill.on.slate { background: var(--slate); border-color: var(--slate); }
+.flag-pill.on.moss  { background: var(--moss); border-color: var(--moss); }
+.flag-pill.on.deep  { background: var(--rust-deep); border-color: var(--rust-deep); }
+
+.severity-bar {
+  display: inline-block;
+  height: 6px;
+  width: 80px;
+  background: var(--bone-deep);
+  position: relative;
+  vertical-align: middle;
+}
+.severity-bar > i {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  background: var(--rust);
+  display: block;
+}
+.severity-bar.lo > i { background: var(--moss); }
+.severity-bar.md > i { background: var(--amber); }
+.severity-bar.hi > i { background: var(--rust); }
+
+.season-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 3px 8px;
+  border: 1px solid var(--rule);
+  display: inline-block;
+  color: var(--ink-dim);
+}
+.season-tag.summer { color: var(--amber); border-color: var(--amber); }
+.season-tag.winter { color: var(--slate); border-color: var(--slate); }
+.season-tag.year   { color: var(--moss); border-color: var(--moss); }
+
+/* ============================================================
+   Subscriber detail
+   ============================================================ */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 36px;
+  align-items: start;
+}
+
+.detail-chart {
+  border-top: 1px solid var(--ink);
+  padding-top: 18px;
+}
+
+.detail-chart .ch-cap {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+  margin-bottom: 12px;
+}
+.detail-chart .ch-cap b { color: var(--ink); }
+
+.id-card {
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  padding: 22px 24px;
+}
+.id-card .id-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+.id-card .id-name {
+  font-family: var(--display);
+  font-size: 26px;
+  line-height: 1.05;
+  margin-bottom: 14px;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  font-family: var(--sans);
+  font-size: 12px;
+  border-top: 1px solid var(--rule);
+}
+.kv > div {
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--rule);
+}
+.kv .k { color: var(--ink-dim); }
+.kv .v {
+  font-family: var(--mono);
+  text-align: right;
+  color: var(--ink);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.flags-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+.flag-line {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 14px;
+  background: var(--paper);
+  border-left: 3px solid var(--rust);
+}
+.flag-line.amber { border-left-color: var(--amber); }
+.flag-line.plum  { border-left-color: var(--plum); }
+.flag-line.slate { border-left-color: var(--slate); }
+.flag-line.moss  { border-left-color: var(--moss); }
+
+.flag-line .gly {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--rust);
+}
+.flag-line.amber .gly { color: var(--amber); }
+.flag-line.plum  .gly { color: var(--plum); }
+.flag-line.slate .gly { color: var(--slate); }
+.flag-line.moss  .gly { color: var(--moss); }
+
+.flag-line .nm {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.flag-line .ev {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.metric-rows {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 36px;
+}
+.metric-rows > div {
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.metric-rows .mlabel {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.metric-rows .mvalue {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.footer {
+  margin-top: 64px;
+  padding: 18px 0 8px;
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+}
+.footer b { color: var(--ink); font-weight: 500; }
+
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+(function(){
+/* global React */
+const { useState, useMemo } = React;
+
+// ============================================================
+// MOCK DATA
+// ============================================================
+const MOCK_KPIS = {
+  total: 12847,
+  months: 47,
+  flagged: 1284,
+  highRisk: 217,
+};
+
+const FLAGS = [
+  { key: 'theft',    glyph: '▼', title: 'Подозрение на хищение', color: 'rust',  count: 412, eta: 'падение ≥50%' },
+  { key: 'silence',  glyph: '◌', title: 'Долгое молчание ПУ',    color: 'slate', count: 638, eta: '≥6 мес. без показаний' },
+  { key: 'power',    glyph: '▲', title: 'Превышение мощности',   color: 'amber', count: 174, eta: 'пик > разрешённой' },
+  { key: 'vola',     glyph: '~', title: 'Нестабильность',         color: 'plum',  count: 289, eta: 'CV > 1.2' },
+  { key: 'flat',     glyph: '▦', title: 'Одинаковые подряд',      color: 'moss',  count: 156, eta: '≥6 равных значений' },
+  { key: 'cohort',   glyph: '◆', title: 'Аномалия в когорте',     color: 'deep',  count: 203, eta: 'z > 3.0' },
+];
+
+const FLAG_COUNT_HIST = [
+  { n: 0, count: 11563, color: 'var(--ink-faint)' },
+  { n: 1, count: 712,   color: 'var(--moss)'      },
+  { n: 2, count: 358,   color: 'var(--amber)'     },
+  { n: 3, count: 148,   color: 'var(--rust)'      },
+  { n: 4, count: 52,    color: 'var(--rust)'      },
+  { n: 5, count: 14,    color: 'var(--rust-deep)' },
+];
+
+const SEASON_HIST = [
+  { name: 'круглогодичный',     count: 8412, color: 'var(--ink)' },
+  { name: 'летний (дача)',       count: 2104, color: 'var(--amber)' },
+  { name: 'зимний (отопление)',  count: 1763, color: 'var(--slate)' },
+  { name: 'нет данных',          count: 568,  color: 'var(--ink-faint)' },
+];
+
+// 47 monthly observations for selected subscriber, with steep drop midway
+const DETAIL_SERIES = (() => {
+  const months = [];
+  const startY = 2022, startM = 0;
+  for (let i = 0; i < 36; i++) {
+    const m = (startM + i) % 12;
+    const y = startY + Math.floor((startM + i) / 12);
+    months.push({ y, m });
+  }
+  // realistic seasonal pattern + drop at month 22
+  const seasonal = (m) => 380 + 220 * Math.cos((m - 1) / 12 * Math.PI * 2);
+  return months.map((mo, i) => {
+    const base = seasonal(mo.m);
+    const trend = i < 22 ? 1.0 : 0.32;
+    const noise = ((i * 17) % 11 - 5) * 6;
+    const skip = (i === 27 || i === 28) ? null : 1;
+    const v = skip === null ? null : Math.round((base + noise) * trend);
+    return { ...mo, v };
+  });
+})();
+
+const MOCK_REGISTRY = [
+  { id: '03741', meter: '0123456789', name: 'СНТ Восход, уч. 142',           addr: 'ст. Холмская, ул. Садовая 142',     flags: ['theft','silence'],  count: 2, season: 'summer', mean: 142, peak: 540, severity: 0.65, recent: '23 / мес' },
+  { id: '11283', meter: '0987654321', name: 'мкр. Юбилейный, д. 22 кв. 14',  addr: 'г. Краснодар, ул. Ставропольская', flags: ['theft','power','vola','cohort'], count: 4, season: 'year',   mean: 612, peak: 2840, severity: 0.92, recent: '74 / мес' },
+  { id: '20194', meter: '4561237890', name: 'Магазин «Берёза»',              addr: 'г. Темрюк, ул. Ленина 8',           flags: ['power','vola'],      count: 2, season: 'year',   mean: 4180, peak: 12400, severity: 0.74, recent: '3850 / мес' },
+  { id: '04508', meter: '7891234560', name: 'Дача, ул. Виноградная 3',       addr: 'п. Витязево, ул. Виноградная',     flags: ['silence','flat'],     count: 2, season: 'summer', mean: 84, peak: 320,  severity: 0.41, recent: '0 / мес · 4 пропуска' },
+  { id: '15672', meter: '3217896540', name: 'Котельная фермер. хоз-во',      addr: 'х. Свободный, ул. Полевая',         flags: ['theft','silence','flat','cohort'], count: 4, season: 'winter', mean: 2840, peak: 6120, severity: 0.88, recent: '410 / мес' },
+  { id: '08431', meter: '6543217890', name: 'ИП Демченко А.С.',              addr: 'г. Сочи, ул. Курортная 15',         flags: ['vola','cohort'],      count: 2, season: 'year',   mean: 1240, peak: 4870, severity: 0.58, recent: '2110 / мес' },
+  { id: '17905', meter: '8521479630', name: 'СНТ «Заря», уч. 8',              addr: 'ст. Северская, ул. Лесная',         flags: ['theft','flat'],       count: 2, season: 'summer', mean: 96, peak: 410, severity: 0.52, recent: '14 / мес' },
+  { id: '02156', meter: '1597534862', name: 'Магазин «Радуга»',              addr: 'г. Армавир, ул. Кирова 41',         flags: ['cohort'],             count: 1, season: 'year',   mean: 380, peak: 1020, severity: 0.34, recent: '370 / мес' },
+];
+
+const FLAG_BY_KEY = Object.fromEntries(FLAGS.map(f => [f.key, f]));
+
+window.MOCK = { MOCK_KPIS, FLAGS, FLAG_COUNT_HIST, SEASON_HIST, DETAIL_SERIES, MOCK_REGISTRY, FLAG_BY_KEY };
+
+})();
+</script>
+<script type="text/babel" data-presets="react">
+(function(){
+/* global React */
+const { useState: useStateC, useMemo: useMemoC } = React;
+
+// ============================================================
+// SVG CHARTS — editorial style (no plotly)
+// ============================================================
+
+function BarChartV({ data, height = 240, accentMax = true }) {
+  const max = Math.max(...data.map(d => d.count));
+  const w = 100; // viewBox width unit
+  const barW = w / data.length;
+  const padTop = 24;
+  const innerH = height - padTop - 40;
+
+  return (
+    <svg viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" style={{width:'100%', height, display:'block'}}>
+      {/* baseline */}
+      <line x1="0" y1={padTop + innerH} x2={w} y2={padTop + innerH} stroke="var(--ink)" strokeWidth="0.25" vectorEffect="non-scaling-stroke" />
+      {data.map((d, i) => {
+        const h = (d.count / max) * innerH;
+        const x = i * barW + barW * 0.18;
+        const bw = barW * 0.64;
+        const y = padTop + innerH - h;
+        const isAcc = accentMax && d.count === max;
+        return (
+          <g key={i}>
+            <rect x={x} y={y} width={bw} height={h} fill={d.color || 'var(--ink)'} />
+            <text x={x + bw/2} y={y - 4}
+                  fill="var(--ink)" fontFamily="var(--mono)" fontSize="3.2"
+                  textAnchor="middle"
+                  style={{fontVariantNumeric:'tabular-nums', fontWeight:500}}>
+              {d.count.toLocaleString('ru-RU')}
+            </text>
+            <text x={x + bw/2} y={padTop + innerH + 12}
+                  fill="var(--ink-dim)" fontFamily="var(--mono)" fontSize="3"
+                  textAnchor="middle">
+              {d.label || d.n || d.name}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function BarChartH({ data, height = 260 }) {
+  const max = Math.max(...data.map(d => d.count));
+  const rowH = (height - 8) / data.length;
+  return (
+    <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none"
+         style={{width:'100%', height, display:'block', overflow:'visible'}}>
+      {data.map((d, i) => {
+        const y = i * rowH + 4;
+        const labelW = 38;
+        const valW = ((d.count / max) * (100 - labelW - 12));
+        return (
+          <g key={i}>
+            <text x={labelW - 2} y={y + rowH * 0.5 + 1.2}
+                  fill="var(--ink)" fontFamily="var(--sans)" fontSize="3.2"
+                  textAnchor="end" style={{fontWeight:500}}>
+              {d.title}
+            </text>
+            <rect x={labelW} y={y + rowH*0.18} width={valW} height={rowH * 0.45}
+                  fill={d.color} />
+            <text x={labelW + valW + 1.2} y={y + rowH*0.5 + 1.4}
+                  fill="var(--ink)" fontFamily="var(--mono)" fontSize="3.2"
+                  textAnchor="start" style={{fontVariantNumeric:'tabular-nums', fontWeight:500}}>
+              {d.count.toLocaleString('ru-RU')}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function LineChart({ series, height = 360 }) {
+  // series: [{y, m, v}]
+  const padL = 36, padR = 12, padT = 18, padB = 32;
+  const W = 800;
+  const innerW = W - padL - padR;
+  const innerH = height - padT - padB;
+  const values = series.map(s => s.v).filter(v => v != null);
+  const max = Math.max(...values);
+  const min = 0;
+  const xStep = innerW / (series.length - 1);
+
+  // baseline (mean of first 22 months) for reference
+  const baseline = Math.round(
+    series.slice(0, 22).reduce((a,b) => a + (b.v ?? 0), 0) / series.slice(0,22).filter(s => s.v != null).length
+  );
+
+  // build path with gaps for null
+  let pathD = '';
+  let areaSegments = [];
+  let curArea = '';
+  let inSeg = false;
+  series.forEach((s, i) => {
+    const x = padL + i * xStep;
+    if (s.v == null) {
+      if (inSeg) { areaSegments.push(curArea); curArea=''; inSeg=false; }
+      return;
+    }
+    const y = padT + innerH - ((s.v - min) / (max - min)) * innerH;
+    if (!inSeg) { pathD += `M ${x} ${y} `; curArea = `M ${x} ${padT+innerH} L ${x} ${y} `; inSeg = true; }
+    else        { pathD += `L ${x} ${y} `; curArea += `L ${x} ${y} `; }
+    if (i === series.length - 1) curArea += `L ${x} ${padT+innerH} Z`;
+  });
+  if (inSeg) {
+    const lastIdx = series.length - 1 - [...series].reverse().findIndex(s => s.v != null);
+    const lastX = padL + lastIdx * xStep;
+    curArea += ` L ${lastX} ${padT+innerH} Z`;
+    areaSegments.push(curArea);
+  }
+
+  // y ticks
+  const ticks = 4;
+  const yTicks = [];
+  for (let i = 0; i <= ticks; i++) {
+    const val = max - (max / ticks) * i;
+    const y = padT + (innerH / ticks) * i;
+    yTicks.push({ val: Math.round(val), y });
+  }
+
+  // x labels — every 4th month
+  const xLabels = series.map((s, i) => ({ i, label: `${String(s.m+1).padStart(2,'0')}.${String(s.y).slice(2)}` }))
+                       .filter((_, i) => i % 4 === 0);
+
+  // baseline y
+  const baselineY = padT + innerH - ((baseline - min) / (max - min)) * innerH;
+
+  // drop annotation
+  const dropI = 22;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${height}`} style={{width:'100%', height, display:'block', overflow:'visible'}}>
+      {/* y grid */}
+      {yTicks.map((t, i) => (
+        <g key={i}>
+          <line x1={padL} y1={t.y} x2={W-padR} y2={t.y}
+                stroke={i === ticks ? 'var(--ink)' : 'var(--rule)'}
+                strokeWidth={i === ticks ? 1 : 0.5} />
+          <text x={padL - 6} y={t.y + 4}
+                fill="var(--ink-dim)" fontFamily="var(--mono)" fontSize="10"
+                textAnchor="end" style={{fontVariantNumeric:'tabular-nums'}}>
+            {t.val.toLocaleString('ru-RU')}
+          </text>
+        </g>
+      ))}
+
+      {/* baseline ref line */}
+      <line x1={padL} y1={baselineY} x2={W-padR} y2={baselineY}
+            stroke="var(--rust)" strokeWidth="1" strokeDasharray="3 4" />
+      <text x={W - padR - 4} y={baselineY - 6}
+            fill="var(--rust)" fontFamily="var(--mono)" fontSize="10"
+            textAnchor="end" style={{textTransform:'uppercase', letterSpacing:'0.12em', fontWeight:500}}>
+        Опорное среднее · {baseline.toLocaleString('ru-RU')}
+      </text>
+
+      {/* drop marker */}
+      <line x1={padL + dropI*xStep} y1={padT} x2={padL + dropI*xStep} y2={padT+innerH}
+            stroke="var(--rust)" strokeWidth="0.8" />
+      <text x={padL + dropI*xStep + 6} y={padT + 14}
+            fill="var(--rust)" fontFamily="var(--mono)" fontSize="10"
+            style={{textTransform:'uppercase', letterSpacing:'0.12em', fontWeight:600}}>
+        ▼ ноя 2023 · падение −68%
+      </text>
+
+      {/* area fill */}
+      {areaSegments.map((d, i) => (
+        <path key={i} d={d} fill="var(--rust)" opacity="0.07" />
+      ))}
+
+      {/* line */}
+      <path d={pathD} fill="none" stroke="var(--ink)" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+
+      {/* points */}
+      {series.map((s, i) => {
+        if (s.v == null) return null;
+        const x = padL + i * xStep;
+        const y = padT + innerH - ((s.v - min) / (max - min)) * innerH;
+        return <circle key={i} cx={x} cy={y} r="2.4" fill="var(--paper)" stroke="var(--ink)" strokeWidth="1.2" />;
+      })}
+
+      {/* gap markers */}
+      {series.map((s, i) => {
+        if (s.v != null) return null;
+        const x = padL + i * xStep;
+        return <g key={`g${i}`}>
+          <line x1={x} y1={padT+innerH-4} x2={x} y2={padT+innerH+4}
+                stroke="var(--ink-dim)" strokeWidth="0.8" />
+          <circle cx={x} cy={padT+innerH+10} r="1.6" fill="var(--ink-dim)" />
+        </g>;
+      })}
+
+      {/* x labels */}
+      {xLabels.map((l, i) => (
+        <text key={i} x={padL + l.i * xStep} y={padT + innerH + 18}
+              fill="var(--ink-dim)" fontFamily="var(--mono)" fontSize="10"
+              textAnchor="middle" style={{textTransform:'uppercase'}}>
+          {l.label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+window.Charts = { BarChartV, BarChartH, LineChart };
+
+})();
+</script>
+<script type="text/babel" data-presets="react">
+(function(){
+/* global React */
+const { useState: useStateS } = React;
+
+function Sidebar({ onPickSample }) {
+  return (
+    <aside className="sidebar">
+      <div className="eyebrow" style={{marginBottom: 8}}>§ NN.01 — INSTRUMENT</div>
+      <h2>Пороги</h2>
+      <div className="deck-line">подкручивайте — реестр пересчитается</div>
+
+      <Group title="Хищение" glyph="▼">
+        <Knob label="Падение, %" value="50%" />
+        <Knob label="Недавний период, мес" value="12" pos={0.45} />
+        <Knob label="Опорный период, мес" value="24" pos={0.6} />
+        <Knob label="Мин. опорное, кВт·ч" value="50" pos={0.05} />
+      </Group>
+      <Group title="Молчание ПУ" glyph="◌">
+        <Knob label="Подряд месяцев" value="6" pos={0.25} />
+      </Group>
+      <Group title="Превышение мощности" glyph="▲">
+        <Knob label="Пик / разрешённая" value="1.0" pos={0.4} />
+      </Group>
+      <Group title="Нестабильность" glyph="~">
+        <Knob label="Коэфф. вариации" value="1.2" pos={0.42} />
+      </Group>
+      <Group title="Одинаковые подряд" glyph="▦">
+        <Knob label="Длина серии, мес" value="6" pos={0.25} />
+      </Group>
+      <Group title="Аномалия в когорте" glyph="◆">
+        <Knob label="Robust z-score" value="3.0" pos={0.5} />
+      </Group>
+
+      <div style={{marginTop: 28}}>
+        <button className="btn btn-ghost" onClick={onPickSample} style={{width:'100%', justifyContent:'center'}}>
+          <span>Загрузить пример</span><span className="arrow">↓</span>
+        </button>
+      </div>
+
+      <div className="eyebrow" style={{marginTop: 28, lineHeight: 1.7}}>
+        v.5 · build 2026.05<br/>
+        работает в браузере<br/>
+        данные не сохраняются
+      </div>
+    </aside>
+  );
+}
+
+function Group({ title, glyph, children }) {
+  const [open, setOpen] = useStateS(true);
+  return (
+    <div className="thresh-group">
+      <div className="thresh-head" onClick={() => setOpen(!open)}>
+        <span className="glyph">{glyph}</span>
+        <span className="title">{title}</span>
+        <span className="caret">{open ? '−' : '+'}</span>
+      </div>
+      {open && <div className="thresh-body">{children}</div>}
+    </div>
+  );
+}
+
+function Knob({ label, value, pos = 0.5 }) {
+  const [v, setV] = useStateS(pos * 100);
+  return (
+    <div className="knob">
+      <div className="knob-row">
+        <span>{label}</span>
+        <b>{value}</b>
+      </div>
+      <input type="range" min="0" max="100" value={v} onChange={e => setV(+e.target.value)} />
+    </div>
+  );
+}
+
+window.Sidebar = Sidebar;
+
+})();
+</script>
+<script type="text/babel" data-presets="react">
+(function(){
+/* global React, ReactDOM */
+const { useState: useStateA } = React;
+const { BarChartV, BarChartH, LineChart } = window.Charts;
+const { MOCK_KPIS, FLAGS, FLAG_COUNT_HIST, SEASON_HIST, DETAIL_SERIES, MOCK_REGISTRY, FLAG_BY_KEY } = window.MOCK;
+const Sidebar = window.Sidebar;
+
+function App() {
+  const [loaded, setLoaded] = useStateA(true);
+  const [tab, setTab] = useStateA('summary');
+  const [activeFlags, setActiveFlags] = useStateA([]);
+  const [minFlags, setMinFlags] = useStateA(1);
+  const [season, setSeason] = useStateA('all');
+  const [selectedId, setSelectedId] = useStateA('11283');
+
+  const filtered = MOCK_REGISTRY.filter(r => {
+    if (r.count < minFlags) return false;
+    if (season !== 'all' && r.season !== season) return false;
+    if (activeFlags.length && !activeFlags.every(f => r.flags.includes(f))) return false;
+    return true;
+  });
+
+  const selected = MOCK_REGISTRY.find(r => r.id === selectedId) || MOCK_REGISTRY[1];
+
+  return (
+    <div className="app" data-screen-label={loaded ? `Loaded · ${tab}` : 'Empty state'}>
+      <Sidebar onPickSample={() => setLoaded(true)} />
+      <div className="main">
+        <Masthead loaded={loaded} setLoaded={setLoaded} />
+        <Hero loaded={loaded} />
+        {!loaded && <EmptyState onLoad={() => setLoaded(true)} />}
+        {loaded && <>
+          <UploadRow />
+          <KpiStrip />
+          <Tabs tab={tab} setTab={setTab} />
+          {tab === 'summary' && <SummaryTab />}
+          {tab === 'registry' && (
+            <RegistryTab
+              filtered={filtered}
+              minFlags={minFlags} setMinFlags={setMinFlags}
+              season={season} setSeason={setSeason}
+              activeFlags={activeFlags} setActiveFlags={setActiveFlags}
+              onOpen={(id) => { setSelectedId(id); setTab('detail'); }}
+            />
+          )}
+          {tab === 'detail' && (
+            <DetailTab selected={selected} setSelectedId={setSelectedId} />
+          )}
+        </>}
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
+function Masthead({ loaded, setLoaded }) {
+  return (
+    <div className="masthead">
+      <div className="brand">
+        <span className="brand-mark">Анализатор</span>
+        <span className="brand-tag">Том IV · Поиск аномалий в потреблении</span>
+      </div>
+      <div className="meta">
+        <span>Выпуск № 047</span>
+        <span>четверг · <b>8 мая 2026</b></span>
+        <span style={{cursor:'pointer'}} onClick={() => setLoaded(!loaded)}>
+          [{loaded ? '◼ загружено' : '◻ пусто'}]
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Hero({ loaded }) {
+  return (
+    <div className="hero">
+      <h1>
+        Поиск <em>аномального</em><br/>
+        потребления
+      </h1>
+      <div className="deck">
+        Реестр абонентов с флагами риска по выгрузке помесячных
+        показаний. Шесть детекторов, настраиваемые пороги, экспорт в Excel
+        — всё в браузере.
+      </div>
+    </div>
+  );
+}
+
+function UploadRow() {
+  return (
+    <div className="upload-row">
+      <div className="dropzone">
+        <div className="dz-text">
+          <span className="dz-title">потребление_апрель.xlsx</span>
+          <span className="dz-hint">12 847 строк · 47 месяцев · загружено в 14:32</span>
+        </div>
+        <button className="btn btn-ghost"><span>Заменить</span><span className="arrow">↗</span></button>
+      </div>
+      <div className="report-card">
+        <div className="rc-eyebrow">Сводный отчёт</div>
+        <div className="rc-title">по всем флагам</div>
+        <button className="btn"><span>Скачать xlsx</span><span className="arrow">↓</span></button>
+      </div>
+    </div>
+  );
+}
+
+function KpiStrip() {
+  return (
+    <div className="kpi-strip">
+      <div className="kpi-cell">
+        <div className="label"><span className="dot" /> Абонентов в файле</div>
+        <div className="value">{MOCK_KPIS.total.toLocaleString('ru-RU')}</div>
+        <div className="sub">из них <b>11 282</b> активных</div>
+      </div>
+      <div className="kpi-cell">
+        <div className="label"><span className="dot" /> Месяцев данных</div>
+        <div className="value">{MOCK_KPIS.months}</div>
+        <div className="sub">янв 2022 — мар 2026</div>
+      </div>
+      <div className="kpi-cell amber">
+        <div className="label"><span className="dot" /> С флагами</div>
+        <div className="value">{MOCK_KPIS.flagged.toLocaleString('ru-RU')}</div>
+        <div className="sub"><b>10.0%</b> от файла</div>
+      </div>
+      <div className="kpi-cell rust">
+        <div className="label"><span className="dot" /> Высокий риск · 3+ флага</div>
+        <div className="value">{MOCK_KPIS.highRisk.toLocaleString('ru-RU')}</div>
+        <div className="sub">требуют выезда</div>
+      </div>
+    </div>
+  );
+}
+
+function Tabs({ tab, setTab }) {
+  const items = [
+    { k: 'summary',  n: '01', t: 'Сводка' },
+    { k: 'registry', n: '02', t: 'Реестр' },
+    { k: 'detail',   n: '03', t: 'Карточка абонента' },
+  ];
+  return (
+    <div className="tabs">
+      {items.map(i => (
+        <button key={i.k} className={tab === i.k ? 'active' : ''} onClick={() => setTab(i.k)}>
+          <span className="num">{i.n}</span>{i.t}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({ onLoad }) {
+  return (
+    <div className="empty-pull">
+      <div className="figure">217</div>
+      <div className="quote">
+        абонентов с тремя и более флагами риска находит
+        алгоритм в средней выгрузке за 47 месяцев. Загрузите свою —
+        и узнайте, сколько у вас.
+      </div>
+      <div className="source">▼ перетащите xlsx или нажмите загрузить пример</div>
+      <div style={{marginTop: 28}}>
+        <button className="btn" onClick={onLoad}>
+          <span>Загрузить пример</span><span className="arrow">↓</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SummaryTab() {
+  return <>
+    <div className="sec-head">
+      <h2 className="sec-title">Распределение <em>флагов</em></h2>
+      <div className="sec-meta">
+        обновлено · <b>14:32 МСК</b><br/>
+        пересчёт при смене порогов
+      </div>
+    </div>
+
+    <div className="chart-grid">
+      <div className="chart-card">
+        <div className="ch-eyebrow">Рисунок 01</div>
+        <div className="ch-title">Сколько абонентов с N флагами</div>
+        <BarChartV
+          data={FLAG_COUNT_HIST.map(d => ({ ...d, label: `${d.n} ${d.n===1?'флаг':d.n>=2&&d.n<=4?'флага':'флагов'}` }))}
+          height={280}
+        />
+      </div>
+      <div className="chart-card">
+        <div className="ch-eyebrow">Рисунок 02</div>
+        <div className="ch-title">Срабатывание каждого флага</div>
+        <BarChartH
+          data={FLAGS.map(f => ({
+            title: f.title,
+            count: f.count,
+            color: f.color === 'rust' ? 'var(--rust)'
+                  : f.color === 'slate' ? 'var(--slate)'
+                  : f.color === 'amber' ? 'var(--amber)'
+                  : f.color === 'plum'  ? 'var(--plum)'
+                  : f.color === 'moss'  ? 'var(--moss)'
+                  : 'var(--rust-deep)'
+          }))}
+          height={280}
+        />
+      </div>
+    </div>
+
+    <div className="sec-head">
+      <h2 className="sec-title">Сезонная <em>классификация</em></h2>
+      <div className="sec-meta">по характеру помесячных колебаний</div>
+    </div>
+    <div style={{maxWidth: 720}}>
+      <BarChartV data={SEASON_HIST.map(s => ({ count: s.count, color: s.color, label: s.name }))} height={240} />
+    </div>
+  </>;
+}
+
+function RegistryTab({ filtered, minFlags, setMinFlags, season, setSeason, activeFlags, setActiveFlags, onOpen }) {
+  const seasons = [
+    { k: 'all',    t: 'все' },
+    { k: 'year',   t: 'круглогодичный' },
+    { k: 'summer', t: 'летний' },
+    { k: 'winter', t: 'зимний' },
+  ];
+  const toggleFlag = (k) => setActiveFlags(activeFlags.includes(k) ? activeFlags.filter(f => f !== k) : [...activeFlags, k]);
+
+  return <>
+    <div className="sec-head">
+      <h2 className="sec-title">Реестр <em>абонентов</em></h2>
+      <div className="sec-meta">кликните строку, чтобы открыть карточку</div>
+    </div>
+
+    <div className="filter-row">
+      <div className="filter-cell">
+        <span className="flabel">Мин. флагов</span>
+        <input type="number" className="input-num" value={minFlags} min="0" max="6"
+               onChange={e => setMinFlags(+e.target.value || 0)} />
+      </div>
+      <div className="filter-cell">
+        <span className="flabel">Сезонность</span>
+        <div className="fcontrol">
+          {seasons.map(s => (
+            <span key={s.k}
+                  className={`chip ${season === s.k ? 'active' : ''}`}
+                  onClick={() => setSeason(s.k)}>{s.t}</span>
+          ))}
+        </div>
+      </div>
+      <div className="filter-cell">
+        <span className="flabel">Только с флагами (И)</span>
+        <div className="fcontrol">
+          {FLAGS.map(f => (
+            <span key={f.key}
+                  className={`chip ${activeFlags.includes(f.key) ? 'active' : ''}`}
+                  onClick={() => toggleFlag(f.key)}>
+              <span className="glyph">{f.glyph}</span>{f.title.toLowerCase()}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div className="tally">
+      Показано <b>{filtered.length.toLocaleString('ru-RU')}</b> из {MOCK_REGISTRY.length.toLocaleString('ru-RU')} ·
+      сортировка по числу флагов ↓
+    </div>
+
+    <table className="reg-table">
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>ПУ / Точка учёта</th>
+          <th>Адрес</th>
+          <th>Флаги</th>
+          <th className="num">Сред., кВт·ч</th>
+          <th className="num">Пик, кВт·ч</th>
+          <th>Сезон</th>
+          <th>Риск</th>
+        </tr>
+      </thead>
+      <tbody>
+        {filtered.map(r => (
+          <tr key={r.id} onClick={() => onOpen(r.id)} style={{cursor:'pointer'}}>
+            <td className="id-col">#{r.id}</td>
+            <td>
+              <div className="name-col">{r.name}</div>
+              <div className="id-col" style={{marginTop: 2}}>ПУ {r.meter}</div>
+            </td>
+            <td className="addr-col">{r.addr}</td>
+            <td>
+              <div className="flag-pill-row">
+                {FLAGS.map(f => (
+                  <span key={f.key}
+                        className={`flag-pill ${r.flags.includes(f.key) ? 'on ' + f.color : ''}`}
+                        title={f.title}>{f.glyph}</span>
+                ))}
+              </div>
+            </td>
+            <td className="num">{r.mean.toLocaleString('ru-RU')}</td>
+            <td className="num">{r.peak.toLocaleString('ru-RU')}</td>
+            <td>
+              <span className={`season-tag ${r.season}`}>
+                {r.season === 'summer' ? 'летний' : r.season === 'winter' ? 'зимний' : 'круглогод.'}
+              </span>
+            </td>
+            <td>
+              <span className={`severity-bar ${r.severity > 0.7 ? 'hi' : r.severity > 0.45 ? 'md' : 'lo'}`}>
+                <i style={{width: `${r.severity * 100}%`}}></i>
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+
+    <div style={{marginTop: 22, display:'flex', gap: 12}}>
+      <button className="btn"><span>Скачать выборку</span><span className="arrow">↓</span></button>
+      <button className="btn btn-ghost"><span>Сбросить фильтры</span><span className="arrow">×</span></button>
+    </div>
+  </>;
+}
+
+function DetailTab({ selected, setSelectedId }) {
+  const flagsOn = FLAGS.filter(f => selected.flags.includes(f.key));
+  const otherIds = MOCK_REGISTRY.filter(r => r.id !== selected.id).slice(0, 4);
+
+  return <>
+    <div className="sec-head">
+      <h2 className="sec-title">Карточка · <em>#{selected.id}</em></h2>
+      <div className="sec-meta">
+        ПУ <b>{selected.meter}</b><br/>
+        {selected.addr}
+      </div>
+    </div>
+
+    <div className="detail-grid">
+      <div>
+        <div className="detail-chart">
+          <div className="ch-cap">
+            <span>Помесячное потребление · <b>кВт·ч</b></span>
+            <span>36 наблюдений · 2 пропуска</span>
+          </div>
+          <LineChart series={DETAIL_SERIES} height={360} />
+        </div>
+
+        <div className="eyebrow eyebrow-rust" style={{marginTop: 32}}>Активные флаги · {flagsOn.length}</div>
+        <div className="flags-stack">
+          {flagsOn.map(f => (
+            <div key={f.key} className={`flag-line ${f.color}`}>
+              <span className="gly">{f.glyph}</span>
+              <span className="nm">{f.title}</span>
+              <span className="ev">{f.eta}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="eyebrow" style={{marginTop: 32}}>Ключевые метрики</div>
+        <div className="metric-rows">
+          <div><span className="mlabel">Активных месяцев</span><span className="mvalue">34</span></div>
+          <div><span className="mlabel">Среднее, кВт·ч/мес</span><span className="mvalue">612</span></div>
+          <div><span className="mlabel">Пиковый месяц</span><span className="mvalue">2 840</span></div>
+          <div><span className="mlabel">Среднее в опорном</span><span className="mvalue">748</span></div>
+          <div><span className="mlabel">Среднее в недавнем</span><span className="mvalue">240</span></div>
+          <div><span className="mlabel">Доля падения</span><span className="mvalue" style={{color:'var(--rust)'}}>0.68</span></div>
+          <div><span className="mlabel">Макс. пауза, мес</span><span className="mvalue">2</span></div>
+          <div><span className="mlabel">Макс. серия равных</span><span className="mvalue">3</span></div>
+          <div><span className="mlabel">Пик / разрешённая</span><span className="mvalue" style={{color:'var(--amber)'}}>1.42</span></div>
+          <div><span className="mlabel">Z в когорте</span><span className="mvalue" style={{color:'var(--rust-deep)'}}>3.81</span></div>
+        </div>
+      </div>
+
+      <aside>
+        <div className="id-card">
+          <div className="id-eyebrow">Абонент</div>
+          <div className="id-name">{selected.name}</div>
+          <div className="kv">
+            <div className="k">Вид потребителя</div><div className="v">ФИЗ</div>
+            <div className="k">Заводской № ПУ</div><div className="v">{selected.meter}</div>
+            <div className="k">Населённый пункт</div><div className="v">Краснодар</div>
+            <div className="k">Улица</div><div className="v">Ставропольская</div>
+            <div className="k">Дом</div><div className="v">22, кв. 14</div>
+            <div className="k">Разрешённая мощность</div><div className="v">5.0 кВт</div>
+            <div className="k">Тип события</div><div className="v">плановая поверка</div>
+            <div className="k">Дата события</div><div className="v">21.10.2023</div>
+          </div>
+          <div style={{marginTop: 18, display:'flex', flexDirection:'column', gap: 8}}>
+            <button className="btn"><span>Карточка xlsx</span><span className="arrow">↓</span></button>
+            <button className="btn btn-ghost"><span>Назначить выезд</span><span className="arrow">→</span></button>
+          </div>
+        </div>
+
+        <div className="eyebrow" style={{marginTop: 28, marginBottom: 10}}>Похожие случаи</div>
+        <div style={{display:'flex', flexDirection:'column', gap: 0}}>
+          {otherIds.map(o => (
+            <div key={o.id}
+                 onClick={() => setSelectedId(o.id)}
+                 style={{
+                   cursor:'pointer', padding:'10px 0',
+                   borderBottom:'1px dashed var(--rule)',
+                   display:'grid', gridTemplateColumns:'auto 1fr auto', gap: 12, alignItems:'baseline'
+                 }}>
+              <span className="id-col" style={{fontFamily:'var(--mono)', fontSize:11, color:'var(--ink-dim)'}}>#{o.id}</span>
+              <span style={{fontSize: 12.5, color:'var(--ink)'}}>{o.name}</span>
+              <span style={{fontFamily:'var(--mono)', fontSize:10, color:'var(--rust)'}}>⚑ {o.count}</span>
+            </div>
+          ))}
+        </div>
+      </aside>
+    </div>
+  </>;
+}
+
+function Footer() {
+  return (
+    <div className="footer">
+      <span>анализатор · v.5</span>
+      <span>работает локально · <b>данные не передаются</b></span>
+      <span>стр. 4 / 4</span>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+})();
+</script>
+</body>
+</html>
