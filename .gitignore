@@ -1,0 +1,10 @@
+# Локальное окружение и артефакты проверки (не для репозитория)
+.venv/
+__pycache__/
+*.pyc
+_patch.py
+_gen_test.py
+_shots.py
+test_data.xlsx
+before_*.png
+after_*.png

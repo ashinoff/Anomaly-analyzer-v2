@@ -99,180 +99,122 @@ FLAG_COLOR = {
 # =====================================================================
 CSS = """
 <style>
-/* Material Symbols — дублирующая загрузка с jsdelivr на случай блокировки Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
-@import url('https://cdn.jsdelivr.net/npm/material-icons@1.13.12/iconfont/material-icons.css');
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
+/* ------------------------------------------------------------------
+   Собственный CSS ТОЛЬКО для блоков, которые мы рендерим сами
+   (наши классы). Виджеты Streamlit оформляются штатной темой из
+   .streamlit/config.toml — здесь их не трогаем, чтобы не зависеть от
+   внутренней разметки Streamlit. Шрифты — системные (без CDN).
+   ------------------------------------------------------------------ */
 :root {
-    --navy:        #1F3868;       /* основной корпоративный (фон обложек Россети) */
-    --navy-deep:   #142647;       /* темнее navy */
-    --blue:        #2E5BA8;       /* акцентный синий */
-    --blue-light:  #5891CA;       /* светло-синий */
-    --sky:         #B8D4ED;       /* небесный для фонов */
-    --red:         #C8102E;       /* красный (флаг "опасно") */
-    --orange:      #E37222;       /* оранжевый */
-    --green:       #0E8A6E;       /* зелёный (позитивные показатели) */
-    --purple:      #7B5BA6;
-    --gold:        #C9A227;
-
+    --navy:        #1F3868;   /* основной корпоративный */
+    --blue:        #2E5BA8;
+    --red:         #C8102E;   /* только тонкий акцент */
+    --orange:      #E37222;
+    --green:       #0E8A6E;
+    --bg-soft:     #F4F6FA;
     --bg:          #FFFFFF;
-    --bg-soft:     #F4F6FA;       /* очень светлый фон карточек */
-    --bg-card:     #FFFFFF;
     --border:      #E1E5EB;
-    --border-soft: #EEF1F5;
     --text:        #1A1F2C;
     --text-dim:    #5A6478;
     --text-faint:  #98A0AE;
+    --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    --mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
 }
 
-/* фон */
-.stApp { background: var(--bg) !important; }
+.mono { font-family: var(--mono); }
 
-html, body, [class*="css"], .stApp, .stApp * {
-    font-family: 'Manrope', system-ui, sans-serif;
-    color: var(--text);
-}
-
-/* убираем дефолтные элементы */
-header[data-testid="stHeader"] { background: transparent !important; height: 0; }
-.stDeployButton, #MainMenu, footer { display: none !important; }
-.block-container { padding-top: 1.5rem !important; }
-
-/* типографика */
-h1, h2, h3, .display-font {
-    font-family: 'Barlow Condensed', sans-serif !important;
-    font-weight: 700;
-    letter-spacing: -0.005em;
-    color: var(--navy);
-    text-transform: uppercase;
-}
-h1 { font-size: 3rem !important; line-height: 1; letter-spacing: 0.01em; }
-h2 { font-size: 1.6rem !important; }
-
-.mono { font-family: 'JetBrains Mono', monospace !important; }
-
-/* ========= HERO (как обложка слайда Россети: navy блок) ========= */
+/* ========= HERO ========= */
 .hero {
     background: var(--navy);
     border-bottom: 3px solid var(--red);
     color: #FFFFFF;
-    padding: 2rem 2.4rem;
-    margin: 0 -1rem 2rem -1rem;
+    padding: 1.7rem 2rem;
+    margin: 0 0 1.6rem 0;
+    border-radius: 4px 4px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 2rem;
-    position: relative;
-    overflow: hidden;
+    gap: 1.5rem;
+    flex-wrap: wrap;
 }
-/* === BUILD v5 === */
-/* ВЕСЬ заголовок белый — включая «аномального». Каждый возможный селектор. */
-.stApp .hero,
-.stApp .hero h1,
-.stApp .hero .hero-title,
-.stApp div.hero h1.hero-title,
-.stApp .hero .hero-title *,
-div.hero h1,
-div.hero h1 *,
-.hero h1,
-.hero h1 *,
-.hero-title,
-.hero-title *,
-.hero-em {
-    color: #FFFFFF !important;
-}
+.hero, .hero * { font-family: var(--font); color: #FFFFFF; }
 .hero-title {
-    font-family: 'Barlow Condensed', sans-serif !important;
-    font-weight: 800;
-    font-size: 3.4rem;
-    letter-spacing: 0.005em;
-    line-height: 0.96;
+    font-weight: 700;
+    font-size: 2rem;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
     margin: 0;
-    text-transform: uppercase;
-    position: relative;
-    z-index: 2;
 }
 .hero-em {
-    font-style: normal;
-    font-weight: 300;
-    border-bottom: 4px solid #C8102E;
-    padding-bottom: 2px;
+    font-weight: 400;
+    border-bottom: 3px solid var(--red);
+    padding-bottom: 1px;
 }
 .hero-meta {
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.78) !important;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.82);
     text-transform: uppercase;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.1em;
     text-align: right;
-    line-height: 1.7;
+    line-height: 1.75;
     white-space: nowrap;
-    position: relative;
-    z-index: 2;
 }
 .hero-meta .badge {
     display: inline-block;
-    color: #FFFFFF !important;
+    color: #FFFFFF;
     font-weight: 600;
-    border-left: 3px solid #C8102E;
+    border-left: 3px solid var(--red);
     padding-left: 8px;
     margin-bottom: 4px;
 }
 
-/* ========= ЛЕНТА МЕТРИК ========= */
-.metric-strip {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
+/* ========= КАРТОЧКИ МЕТРИК (в st.columns) ========= */
 .metric-cell {
-    padding: 1.4rem 1.5rem;
-    background: var(--bg-card);
+    padding: 1.1rem 1.2rem;
+    background: var(--bg);
     border: 1px solid var(--border);
-    border-top: 4px solid var(--cell-accent, var(--navy));
-    border-radius: 2px;
+    border-top: 3px solid var(--cell-accent, var(--navy));
+    border-radius: 4px;
+    height: 100%;
 }
 .metric-label {
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.66rem;
+    font-family: var(--mono);
+    font-size: 0.62rem;
     text-transform: uppercase;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.12em;
     color: var(--text-dim);
-    margin-bottom: 0.7rem;
-    font-weight: 500;
+    margin-bottom: 0.55rem;
+    font-weight: 600;
 }
 .metric-value {
-    font-family: 'Barlow Condensed', sans-serif !important;
+    font-family: var(--mono);
     font-weight: 700;
-    font-size: 3rem;
-    line-height: 1;
+    font-size: 1.9rem;
+    line-height: 1.1;
     color: var(--navy);
+    word-break: break-word;
 }
 .metric-value.red { color: var(--red); }
-.metric-value.green { color: var(--green); }
-.metric-value.blue { color: var(--blue); }
 
 /* ========= СЕКЦИОННЫЕ ЗАГОЛОВКИ ========= */
 .section-label {
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.7rem;
+    font-family: var(--mono);
+    font-size: 0.65rem;
     text-transform: uppercase;
-    letter-spacing: 0.22em;
-    color: var(--blue);
-    margin: 2rem 0 0.4rem 0;
-    font-weight: 500;
+    letter-spacing: 0.16em;
+    color: var(--text-dim);
+    margin: 1.5rem 0 0.3rem 0;
+    font-weight: 600;
 }
 .section-title {
-    font-family: 'Barlow Condensed', sans-serif !important;
-    font-weight: 600;
-    font-size: 1.7rem;
-    line-height: 1.05;
-    text-transform: uppercase;
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: 1.25rem;
+    line-height: 1.2;
     color: var(--navy);
-    margin: 0.2rem 0 1.3rem 0;
-    padding-bottom: 0.7rem;
+    margin: 0.1rem 0 1rem 0;
+    padding-bottom: 0.5rem;
     border-bottom: 2px solid var(--navy);
 }
 
@@ -280,11 +222,12 @@ div.hero h1 *,
 .flag-row {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    padding: 0.7rem 1rem;
-    margin-bottom: 0.5rem;
+    gap: 0.7rem;
+    padding: 0.6rem 0.9rem;
+    margin-bottom: 0.4rem;
     background: var(--bg-soft);
-    border-left: 4px solid var(--flag-color, var(--navy));
+    border-left: 3px solid var(--flag-color, var(--navy));
+    border-radius: 0 4px 4px 0;
 }
 .flag-row .icon {
     color: var(--flag-color, var(--navy));
@@ -292,469 +235,99 @@ div.hero h1 *,
     align-items: center;
 }
 .flag-row .name {
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--font);
     font-weight: 500;
     color: var(--text);
-    font-size: 0.95rem;
+    font-size: 0.92rem;
 }
 .flag-empty {
-    padding: 0.9rem 1.1rem;
-    color: var(--green);
-    background: rgba(14, 138, 110, 0.08);
-    border-left: 4px solid var(--green);
+    padding: 0.7rem 1rem;
+    color: var(--navy);
+    background: var(--bg-soft);
+    border-left: 3px solid var(--navy);
     font-weight: 500;
+    font-family: var(--font);
+    border-radius: 0 4px 4px 0;
 }
 
 /* ========= KEY-VALUE ========= */
-.kv-list { font-family: 'Manrope', sans-serif; }
+.kv-list { font-family: var(--font); }
 .kv-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 0.55rem 0;
-    border-bottom: 1px dashed var(--border);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
     gap: 1rem;
 }
 .kv-row:last-child { border-bottom: none; }
-.kv-key { color: var(--text-dim); font-size: 0.86rem; }
+.kv-key { color: var(--text-dim); font-size: 0.85rem; }
 .kv-val {
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.92rem;
+    font-family: var(--mono);
+    font-size: 0.9rem;
     color: var(--text);
     text-align: right;
-    font-weight: 500;
+    font-weight: 600;
     word-break: break-word;
 }
 
-/* ========= ТАБЫ ========= */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 0;
-    border-bottom: 2px solid var(--border);
-    background: transparent;
-}
-.stTabs [data-baseweb="tab"] {
-    font-family: 'Barlow Condensed', sans-serif !important;
-    font-size: 1.05rem !important;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 0.7rem 1.6rem;
-    color: var(--text-dim);
-    background: transparent;
-    border: none;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
-    transition: color 0.2s, border-color 0.2s;
-}
-.stTabs [data-baseweb="tab"]:hover { color: var(--navy); }
-.stTabs [aria-selected="true"] {
-    color: var(--navy) !important;
-    border-bottom-color: var(--red) !important;
-}
-
-/* ========= САЙДБАР ========= */
-[data-testid="stSidebar"] {
-    background: var(--bg-soft) !important;
-    border-right: 1px solid var(--border);
-}
-[data-testid="stSidebar"] h1 {
-    font-family: 'Barlow Condensed', sans-serif !important;
-    font-size: 1.8rem !important;
-    font-weight: 700;
-    color: var(--navy);
-    margin-bottom: 0.4rem;
-    text-transform: uppercase;
-}
-[data-testid="stSidebar"] [data-testid="stExpander"] {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    margin-bottom: 0.5rem;
-}
-[data-testid="stSidebar"] [data-testid="stExpander"] summary {
-    font-family: 'Manrope', sans-serif !important;
-    font-weight: 600;
-    color: var(--navy);
-}
-
-/* ========= СЛАЙДЕРЫ — синий navy ========= */
-.stSlider [data-baseweb="slider"] > div > div > div {
-    background: var(--navy) !important;
-}
-.stSlider [role="slider"] {
-    background-color: var(--navy) !important;
-    border-color: var(--navy) !important;
-    box-shadow: 0 0 0 4px rgba(31, 56, 104, 0.15) !important;
-}
-.stSlider [data-baseweb="tooltip"] > div {
-    background: var(--navy) !important;
-    color: #FFFFFF !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-weight: 600;
-}
-
-/* ========= POPOVER «как это работает» ========= */
-[data-testid="stSidebar"] [data-testid="stPopover"] button {
-    background: transparent !important;
-    border: 1px solid var(--border) !important;
-    color: var(--blue) !important;
-    font-family: 'Manrope', sans-serif !important;
-    font-size: 0.78rem !important;
-    font-weight: 500 !important;
-    text-transform: none !important;
-    letter-spacing: 0 !important;
-    padding: 0.15rem 0.6rem !important;
-    min-height: 0 !important;
-    border-radius: 2px !important;
-}
-[data-testid="stSidebar"] [data-testid="stPopover"] button * {
-    color: var(--blue) !important;
-}
-[data-testid="stSidebar"] [data-testid="stPopover"] button:hover {
-    background: var(--bg) !important;
-    border-color: var(--blue) !important;
-}
-[data-testid="stPopoverBody"] {
-    font-size: 0.86rem !important;
-    max-width: 420px;
-}
-
-/* number input */
-.stNumberInput input {
-    background: var(--bg) !important;
-    color: var(--text) !important;
-    border: 1px solid var(--border) !important;
-    font-family: 'JetBrains Mono', monospace !important;
-}
-
-/* select */
-.stSelectbox > div > div, .stMultiSelect > div > div {
-    background: var(--bg) !important;
-    border: 1px solid var(--border) !important;
-}
-
-/* ========= КНОПКИ ========= */
-.stDownloadButton button, .stButton button,
-[data-testid="stDownloadButton"] button,
-[data-testid="stBaseButton-secondary"],
-[data-testid="stBaseButton-primary"] {
-    background: var(--navy) !important;
-    color: #FFFFFF !important;
-    border: none !important;
-    font-family: 'Barlow Condensed', sans-serif !important;
-    font-weight: 600 !important;
-    font-size: 1rem !important;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 0.7rem 1.8rem !important;
-    border-radius: 2px !important;
-    transition: background 0.15s, transform 0.1s;
-}
-/* белый текст также для всех потомков (p, span, div внутри button) */
-.stDownloadButton button *, .stButton button *,
-[data-testid="stDownloadButton"] button *,
-[data-testid="stDownloadButton"] button p,
-[data-testid="stDownloadButton"] button span,
-[data-testid="stDownloadButton"] button div {
-    color: #FFFFFF !important;
-}
-.stDownloadButton button:hover, .stButton button:hover,
-[data-testid="stDownloadButton"] button:hover {
-    background: var(--red) !important;
-}
-
-/* ========= ОТКЛЮЧАЕМ MATERIAL ICONS (если CDN заблокирован) ========= */
-/* Если Google Fonts недоступны, Streamlit показывает голые имена иконок
-   ("arrow_drop_down", "upload" и т.д.). Прячем их везде. */
-.material-icons,
-.material-icons-outlined,
-.material-symbols-outlined,
-[class*="material-icons"],
-[class*="material-symbols"],
-[data-testid="stIconMaterial"],
-[data-testid*="ToggleIcon"] {
-    font-size: 0 !important;
-    visibility: hidden !important;
-    width: 0 !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    display: inline-block !important;
-}
-
-/* Возвращаем индикатор открыт/закрыт у expander через текстовый символ */
-[data-testid="stExpander"] details > summary {
-    position: relative;
-    padding-right: 1.8rem !important;
-}
-[data-testid="stExpander"] details > summary::after {
-    content: "▾";
-    position: absolute;
-    right: 0.8rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-dim);
-    font-size: 0.85rem;
-    transition: transform 0.2s;
-    visibility: visible !important;
-    width: auto !important;
-    height: auto !important;
-}
-[data-testid="stExpander"] details[open] > summary::after {
-    content: "▴";
-}
-[data-testid="stFileUploaderDropzone"] {
-    background: var(--bg-soft) !important;
-    border: 2px dashed var(--blue-light) !important;
-    border-radius: 2px !important;
-    padding: 1.2rem 1.5rem !important;
-    min-height: 90px !important;
-    transition: border-color 0.2s, background 0.2s;
-}
-[data-testid="stFileUploaderDropzone"]:hover {
-    border-color: var(--navy) !important;
-    background: #FFFFFF !important;
-}
-/* === КНОПКА «Загрузить» — text-indent trick =================
-   Прячем оригинальное содержимое за экран (text-indent: -9999px),
-   а наш текст рисуем поверх через ::after с position: absolute.
-   Этот способ работает независимо от вложенной структуры Streamlit. */
-section[data-testid="stFileUploaderDropzone"] > button,
-[data-testid="stFileUploaderDropzone"] > button {
-    background: #1F3868 !important;
-    color: #FFFFFF !important;
-    border: none !important;
-    padding: 0 !important;
-    width: 140px !important;
-    height: 40px !important;
-    min-width: 140px !important;
-    position: relative !important;
-    text-indent: -9999px !important;
-    overflow: hidden !important;
-    white-space: nowrap !important;
-    border-radius: 2px !important;
-    cursor: pointer !important;
-}
-section[data-testid="stFileUploaderDropzone"] > button::after,
-[data-testid="stFileUploaderDropzone"] > button::after {
-    content: "Загрузить";
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    color: #FFFFFF !important;
-    font-family: 'Manrope', sans-serif !important;
-    font-weight: 500 !important;
-    font-size: 0.95rem !important;
-    text-indent: 0 !important;
-    letter-spacing: 0.02em;
-}
-section[data-testid="stFileUploaderDropzone"] > button:hover,
-[data-testid="stFileUploaderDropzone"] > button:hover {
-    background: #C8102E !important;
-}
-
-/* === ТЕКСТ-ПОДСКАЗКА в drop zone (Drag and drop / Limit ...) === */
-[data-testid="stFileUploaderDropzoneInstructions"] {
-    font-size: 0 !important;
-    position: relative !important;
-}
-[data-testid="stFileUploaderDropzoneInstructions"] > * {
-    display: none !important;
-}
-[data-testid="stFileUploaderDropzoneInstructions"]::before {
-    content: "Перетащите Excel-файл сюда или нажмите «Загрузить» справа";
-    display: block !important;
-    font-family: 'Manrope', sans-serif !important;
-    font-size: 0.95rem !important;
-    font-weight: 500 !important;
-    color: #1A1F2C !important;
-    text-indent: 0 !important;
-}
-[data-testid="stFileUploaderDropzoneInstructions"]::after {
-    content: "XLSX, XLS — до 200 МБ";
-    display: block !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.72rem !important;
-    color: #5A6478 !important;
-    margin-top: 0.4rem;
-    letter-spacing: 0.05em;
-    text-indent: 0 !important;
-}
-
-/* === БЛОК ЗАГРУЖЕННОГО ФАЙЛА + ВИДИМЫЙ КРЕСТИК «✕» ============= */
-/* Сначала возвращаем материальные иконки/svg в этом блоке к жизни,
-   потому что общий material-icons hide их выключил */
-[data-testid="stFileUploader"] svg,
-[data-testid="stFileUploaderFile"] *,
-[data-testid="stFileUploaderUploadedFile"] *,
-[data-testid="stFileUploaderDeleteBtn"] * {
-    visibility: visible !important;
-}
-
-[data-testid="stFileUploaderFile"],
-[data-testid="stFileUploaderUploadedFile"] {
-    background: #F4F6FA !important;
-    border: 1px solid #E1E5EB !important;
-    border-radius: 2px !important;
-    padding: 0.5rem 0.8rem !important;
-    margin-top: 0.5rem !important;
-    display: flex !important;
-    align-items: center !important;
-}
-
-/* Кнопка удаления — text-indent trick + ✕ через ::after */
-[data-testid="stFileUploaderDeleteBtn"],
-button[data-testid="stFileUploaderDeleteBtn"],
-[data-testid="stFileUploaderFile"] button,
-[data-testid="stFileUploaderUploadedFile"] button {
-    visibility: visible !important;
-    display: inline-flex !important;
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    padding: 0 !important;
-    margin-left: 8px !important;
-    background: transparent !important;
-    border: 1px solid #C8102E !important;
-    border-radius: 2px !important;
-    color: #C8102E !important;
-    position: relative !important;
-    text-indent: -9999px !important;
-    overflow: hidden !important;
-    cursor: pointer !important;
-    flex-shrink: 0 !important;
-}
-[data-testid="stFileUploaderDeleteBtn"] *,
-[data-testid="stFileUploaderFile"] button > *,
-[data-testid="stFileUploaderUploadedFile"] button > * {
-    display: none !important;
-}
-[data-testid="stFileUploaderDeleteBtn"]::after,
-[data-testid="stFileUploaderFile"] button::after,
-[data-testid="stFileUploaderUploadedFile"] button::after {
-    content: "✕";
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    color: #C8102E !important;
-    font-size: 1.1rem !important;
-    font-weight: 700 !important;
-    text-indent: 0 !important;
-    visibility: visible !important;
-}
-[data-testid="stFileUploaderDeleteBtn"]:hover,
-[data-testid="stFileUploaderFile"] button:hover,
-[data-testid="stFileUploaderUploadedFile"] button:hover {
-    background: #C8102E !important;
-}
-[data-testid="stFileUploaderDeleteBtn"]:hover::after,
-[data-testid="stFileUploaderFile"] button:hover::after,
-[data-testid="stFileUploaderUploadedFile"] button:hover::after {
-    color: #FFFFFF !important;
-}
-
-/* dataframe */
-[data-testid="stDataFrame"] {
-    border: 1px solid var(--border);
-    border-radius: 2px;
-}
-
-/* expander */
-[data-testid="stExpander"] {
-    border: 1px solid var(--border);
-    border-radius: 2px;
-}
-
-/* pills */
+/* ========= PILL ========= */
 .pill {
     display: inline-block;
-    padding: 0.22rem 0.7rem;
-    border-radius: 2px;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.74rem;
-    margin: 0.18rem 0.22rem 0.18rem 0;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    margin: 0.15rem 0.2rem 0.15rem 0;
     border: 1px solid var(--border);
     background: var(--bg-soft);
     color: var(--text);
 }
 .pill.found {
-    color: var(--green);
-    border-color: rgba(14, 138, 110, 0.3);
-    background: rgba(14, 138, 110, 0.05);
+    color: var(--navy);
+    border-color: #C7D2E4;
+    background: #EEF2F8;
 }
 
-/* заглушка */
+/* ========= ЗАГЛУШКА ========= */
 .empty-state {
     border: 1px dashed var(--border);
-    padding: 3rem 2rem;
+    padding: 2.4rem 2rem;
     text-align: center;
     color: var(--text-dim);
-    font-family: 'Barlow Condensed', sans-serif !important;
-    font-size: 1.6rem;
+    font-family: var(--font);
+    font-size: 1.1rem;
+    font-weight: 500;
     margin: 1rem 0;
     background: var(--bg-soft);
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    font-weight: 400;
+    border-radius: 4px;
 }
 .empty-state .small {
-    text-transform: none;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.8rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
     color: var(--text-faint);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
     display: block;
-    margin-top: 0.7rem;
+    margin-top: 0.6rem;
     font-weight: 400;
 }
 
-/* подвал */
+/* ========= ПОДВАЛ ========= */
 .footer-strip {
-    margin-top: 3rem;
-    padding: 1.2rem 0;
+    margin-top: 2.5rem;
+    padding: 1rem 0;
     border-top: 2px solid var(--navy);
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.7rem;
+    font-family: var(--mono);
+    font-size: 0.68rem;
     color: var(--text-dim);
     text-transform: uppercase;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.14em;
     text-align: center;
 }
-
-/* Streamlit info/warning/error */
-.stAlert { border-radius: 2px !important; }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
 
-# =====================================================================
-# ДОСТУП: если задана переменная окружения APP_PASSWORD — просим код
-# =====================================================================
-import os
-_APP_PASSWORD = os.environ.get("APP_PASSWORD", "").strip()
-if _APP_PASSWORD and not st.session_state.get("_auth_ok"):
-    st.markdown("""
-    <div class="hero">
-      <h1 class="hero-title">Анализ <span class="hero-em">аномального</span><br/>потребления</h1>
-      <div class="hero-meta"><span class="badge">Доступ по коду</span></div>
-    </div>
-    """, unsafe_allow_html=True)
-    _c1, _, _ = st.columns([1.2, 1, 1])
-    with _c1:
-        _pwd = st.text_input("Код доступа", type="password",
-                             help="Код выдаёт администратор. Задаётся переменной окружения APP_PASSWORD на сервере.")
-        if _pwd:
-            if _pwd == _APP_PASSWORD:
-                st.session_state["_auth_ok"] = True
-                st.rerun()
-            else:
-                st.error("Неверный код доступа")
-    st.stop()
 
 # =====================================================================
 # Plotly-тема (светлая, корпоративная)
@@ -762,11 +335,11 @@ if _APP_PASSWORD and not st.session_state.get("_auth_ok"):
 PLOTLY_LAYOUT = dict(
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(244, 246, 250, 0.4)',
-    font=dict(family='Manrope, sans-serif', color='#5A6478', size=11),
+    font=dict(family='system-ui, sans-serif', color='#5A6478', size=11),
     xaxis=dict(gridcolor='#EEF1F5', linecolor='#E1E5EB', zerolinecolor='#E1E5EB',
-               tickfont=dict(color='#5A6478', family='JetBrains Mono')),
+               tickfont=dict(color='#5A6478', family='ui-monospace, monospace')),
     yaxis=dict(gridcolor='#EEF1F5', linecolor='#E1E5EB', zerolinecolor='#E1E5EB',
-               tickfont=dict(color='#5A6478', family='JetBrains Mono')),
+               tickfont=dict(color='#5A6478', family='ui-monospace, monospace')),
     margin=dict(l=10, r=10, t=20, b=10),
     showlegend=False,
 )
@@ -949,17 +522,19 @@ upload_col, download_col = st.columns([3, 1])
 
 with upload_col:
     uploaded = st.file_uploader(
-        "Excel-файл с потреблением",
+        "Загрузка выгрузки Excel",
         type=['xlsx', 'xls'],
-        label_visibility="collapsed",
+        help="XLSX или XLS до 200 МБ. Нужны помесячные столбцы вида «Январь 2024».",
     )
+    st.caption("Перетащите Excel-файл в область выше или нажмите «Browse files». "
+               "Формат XLSX / XLS, до 200 МБ. Данные не сохраняются.")
 
 # Если файл не загружен — заглушка и стоп
 if not uploaded:
     with download_col:
         st.markdown(
             '<div style="height:100%;display:flex;align-items:center;'
-            'justify-content:center;color:var(--text-faint);font-family:JetBrains Mono;'
+            'justify-content:center;color:var(--text-faint);font-family:ui-monospace, monospace;'
             'font-size:0.7rem;text-transform:uppercase;letter-spacing:0.18em;'
             'border:1px dashed var(--border);padding:1.2rem;text-align:center;'
             'min-height:90px;">Отчёт появится<br/>после загрузки</div>',
@@ -1034,26 +609,20 @@ with download_col:
 n_with_flags = int((registry['кол-во_флагов'] > 0).sum())
 n_high_risk = int((registry['риск_балл'] >= 5).sum())
 
-st.markdown(f"""
-<div class="metric-strip">
-  <div class="metric-cell" style="--cell-accent:var(--navy);">
-    <div class="metric-label">Абонентов в файле</div>
-    <div class="metric-value">{report['total_rows']:,}</div>
-  </div>
-  <div class="metric-cell" style="--cell-accent:var(--blue);">
-    <div class="metric-label">Месяцев данных</div>
-    <div class="metric-value blue">{report['months_detected']}</div>
-  </div>
-  <div class="metric-cell" style="--cell-accent:var(--orange);">
-    <div class="metric-label">С флагами</div>
-    <div class="metric-value" style="color:var(--orange);">{n_with_flags:,}</div>
-  </div>
-  <div class="metric-cell" style="--cell-accent:var(--red);">
-    <div class="metric-label">Высокий риск (балл ≥ 5)</div>
-    <div class="metric-value red">{n_high_risk:,}</div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+_metric_cards = [
+    ("Абонентов в файле", f"{report['total_rows']:,}", "navy", ""),
+    ("Месяцев данных", f"{report['months_detected']}", "navy", ""),
+    ("С флагами", f"{n_with_flags:,}", "navy", ""),
+    ("Высокий риск (балл ≥ 5)", f"{n_high_risk:,}", "red", "red"),
+]
+for _col, (_lbl, _val, _accent, _vcls) in zip(st.columns(4), _metric_cards):
+    with _col:
+        st.markdown(
+            f'<div class="metric-cell" style="--cell-accent:var(--{_accent});">'
+            f'<div class="metric-label">{_lbl}</div>'
+            f'<div class="metric-value {_vcls}">{_val}</div></div>',
+            unsafe_allow_html=True,
+        )
 
 # =====================================================================
 # ОТЧЁТ О ЗАГРУЗКЕ
@@ -1076,7 +645,7 @@ with st.expander(f"Период: {report['period_range']} · что распоз
                 )
         else:
             st.markdown('<div class="section-label">Все флаги вычислены</div>', unsafe_allow_html=True)
-            st.markdown('<div style="color:var(--green);font-family:JetBrains Mono;font-weight:500;">✓ полный набор</div>', unsafe_allow_html=True)
+            st.markdown('<div style="color:var(--green);font-family:ui-monospace, monospace;font-weight:500;">✓ полный набор</div>', unsafe_allow_html=True)
 
 # =====================================================================
 # ВКЛАДКИ
@@ -1098,7 +667,7 @@ with tab_summary:
             x=flag_counts.index.astype(int).astype(str), y=flag_counts.values,
             text=flag_counts.values, textposition='outside',
             marker=dict(color=colors),
-            textfont=dict(family='JetBrains Mono', color='#1A1F2C', size=12),
+            textfont=dict(family='ui-monospace, monospace', color='#1A1F2C', size=12),
             hovertemplate='<b>%{x} флагов</b><br>%{y} абонентов<extra></extra>',
         ))
         fig.update_layout(**PLOTLY_LAYOUT, height=320,
@@ -1120,7 +689,7 @@ with tab_summary:
             textposition='outside',
             orientation='h',
             marker=dict(color=[c for _, _, c in flag_data]),
-            textfont=dict(family='JetBrains Mono', color='#1A1F2C', size=12),
+            textfont=dict(family='ui-monospace, monospace', color='#1A1F2C', size=12),
             hovertemplate='<b>%{y}</b><br>%{x} абонентов<extra></extra>',
         ))
         fig2.update_layout(**PLOTLY_LAYOUT, height=320,
@@ -1135,7 +704,7 @@ with tab_summary:
     fig3 = go.Figure(go.Bar(
         x=seas.index, y=seas.values, text=seas.values, textposition='outside',
         marker_color=[season_color.get(k, GRAY) for k in seas.index],
-        textfont=dict(family='JetBrains Mono', color='#1A1F2C', size=12),
+        textfont=dict(family='ui-monospace, monospace', color='#1A1F2C', size=12),
         hovertemplate='<b>%{x}</b><br>%{y} абонентов<extra></extra>',
     ))
     fig3.update_layout(**PLOTLY_LAYOUT, height=280,
@@ -1172,7 +741,7 @@ with tab_registry:
     })
 
     st.markdown(
-        f'<div style="font-family:JetBrains Mono,monospace;font-size:0.78rem;'
+        f'<div style="font-family:ui-monospace,monospace;font-size:0.78rem;'
         f'color:var(--text-dim);text-transform:uppercase;letter-spacing:0.14em;'
         f'margin:0.5rem 0 0.8rem 0;font-weight:500;">'
         f'Показано <span style="color:var(--red);">{len(view):,}</span> из {len(registry):,} абонентов'
