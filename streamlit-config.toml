@@ -1,0 +1,15 @@
+# Настройки Streamlit. Файл читается автоматически из папки .streamlit/
+
+[theme]
+# Тема служебных элементов (выпадающие списки, меню, dataframe) —
+# приведена к светлому корпоративному стилю приложения
+base = "light"
+primaryColor = "#1F3868"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F4F6FA"
+textColor = "#1A1F2C"
+font = "sans serif"
+
+[server]
+# Максимальный размер загружаемого Excel-файла, МБ
+maxUploadSize = 200

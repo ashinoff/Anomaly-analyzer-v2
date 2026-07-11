@@ -1,0 +1,14 @@
+# Конфигурация деплоя на Amvera Cloud (https://docs.amvera.ru)
+# Веб-интерфейс (Streamlit). Для API-режима замените command на:
+#   command: uvicorn api:app --host 0.0.0.0 --port 80
+meta:
+  environment: python
+  toolchain:
+    name: pip
+    version: "3.12"
+build:
+  requirementsPath: requirements.txt
+run:
+  command: streamlit run app.py --server.port 80 --server.address 0.0.0.0 --server.headless true --browser.gatherUsageStats false
+  containerPort: 80
+  persistenceMount: /data
