@@ -1,0 +1,225 @@
+/* ------------------------------------------------------------------
+   Собственный CSS ТОЛЬКО для блоков, которые мы рендерим сами
+   (наши классы). Виджеты Streamlit оформляются штатной темой из
+   .streamlit/config.toml — здесь их не трогаем, чтобы не зависеть от
+   внутренней разметки Streamlit. Шрифты — системные (без CDN).
+   ------------------------------------------------------------------ */
+:root {
+    --navy:        #1F3868;   /* основной корпоративный */
+    --blue:        #2E5BA8;
+    --red:         #C8102E;   /* только тонкий акцент */
+    --orange:      #E37222;
+    --green:       #0E8A6E;
+    --bg-soft:     #F4F6FA;
+    --bg:          #FFFFFF;
+    --border:      #E1E5EB;
+    --text:        #1A1F2C;
+    --text-dim:    #5A6478;
+    --text-faint:  #98A0AE;
+    --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    --mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.mono { font-family: var(--mono); }
+
+/* ========= HERO ========= */
+.hero {
+    background: var(--navy);
+    border-bottom: 3px solid var(--red);
+    color: #FFFFFF;
+    padding: 1.7rem 2rem;
+    margin: 0 0 1.6rem 0;
+    border-radius: 4px 4px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+.hero, .hero * { font-family: var(--font); color: #FFFFFF; }
+.hero-title {
+    font-weight: 700;
+    font-size: 2rem;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+.hero-em {
+    font-weight: 400;
+    border-bottom: 3px solid var(--red);
+    padding-bottom: 1px;
+}
+.hero-meta {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.82);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: right;
+    line-height: 1.75;
+    white-space: nowrap;
+}
+.hero-meta .badge {
+    display: inline-block;
+    color: #FFFFFF;
+    font-weight: 600;
+    border-left: 3px solid var(--red);
+    padding-left: 8px;
+    margin-bottom: 4px;
+}
+
+/* ========= КАРТОЧКИ МЕТРИК (в st.columns) ========= */
+.metric-cell {
+    padding: 1.1rem 1.2rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--cell-accent, var(--navy));
+    border-radius: 4px;
+    height: 100%;
+}
+.metric-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    margin-bottom: 0.55rem;
+    font-weight: 600;
+}
+.metric-value {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.9rem;
+    line-height: 1.1;
+    color: var(--navy);
+    word-break: break-word;
+}
+.metric-value.red { color: var(--red); }
+
+/* ========= СЕКЦИОННЫЕ ЗАГОЛОВКИ ========= */
+.section-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--text-dim);
+    margin: 1.5rem 0 0.3rem 0;
+    font-weight: 600;
+}
+.section-title {
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: 1.25rem;
+    line-height: 1.2;
+    color: var(--navy);
+    margin: 0.1rem 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--navy);
+}
+
+/* ========= ФЛАГИ ========= */
+.flag-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.9rem;
+    margin-bottom: 0.4rem;
+    background: var(--bg-soft);
+    border-left: 3px solid var(--flag-color, var(--navy));
+    border-radius: 0 4px 4px 0;
+}
+.flag-row .icon {
+    color: var(--flag-color, var(--navy));
+    display: inline-flex;
+    align-items: center;
+}
+.flag-row .name {
+    font-family: var(--font);
+    font-weight: 500;
+    color: var(--text);
+    font-size: 0.92rem;
+}
+.flag-empty {
+    padding: 0.7rem 1rem;
+    color: var(--navy);
+    background: var(--bg-soft);
+    border-left: 3px solid var(--navy);
+    font-weight: 500;
+    font-family: var(--font);
+    border-radius: 0 4px 4px 0;
+}
+
+/* ========= KEY-VALUE ========= */
+.kv-list { font-family: var(--font); }
+.kv-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+    gap: 1rem;
+}
+.kv-row:last-child { border-bottom: none; }
+.kv-key { color: var(--text-dim); font-size: 0.85rem; }
+.kv-val {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    color: var(--text);
+    text-align: right;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+/* ========= PILL ========= */
+.pill {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    margin: 0.15rem 0.2rem 0.15rem 0;
+    border: 1px solid var(--border);
+    background: var(--bg-soft);
+    color: var(--text);
+}
+.pill.found {
+    color: var(--navy);
+    border-color: #C7D2E4;
+    background: #EEF2F8;
+}
+
+/* ========= ЗАГЛУШКА ========= */
+.empty-state {
+    border: 1px dashed var(--border);
+    padding: 2.4rem 2rem;
+    text-align: center;
+    color: var(--text-dim);
+    font-family: var(--font);
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 1rem 0;
+    background: var(--bg-soft);
+    border-radius: 4px;
+}
+.empty-state .small {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    letter-spacing: 0.03em;
+    display: block;
+    margin-top: 0.6rem;
+    font-weight: 400;
+}
+
+/* ========= ПОДВАЛ ========= */
+.footer-strip {
+    margin-top: 2.5rem;
+    padding: 1rem 0;
+    border-top: 2px solid var(--navy);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    text-align: center;
+}
