@@ -1,8 +1,0 @@
-__pycache__/
-*.pyc
-.venv/
-venv/
-.streamlit/secrets.toml
-*.xlsx
-!example.xlsx
-.DS_Store
