@@ -145,6 +145,10 @@ async function uploadFile(file) {
     FILE_ID = done.file_id;
     $('fname').textContent = file.name;
     $('fmeta').textContent = `${done.rows.toLocaleString('ru-RU')} строк · ${(file.size / 1048576).toFixed(1)} МБ`;
+    // Показываем дашборд с настройками СРАЗУ — даже если анализ споткнётся,
+    // ползунки видны и анализ можно повторить, подвигав порог.
+    $('upload-section').hidden = true;
+    $('dashboard').hidden = false;
     await runAnalyze(true);
   } catch (e) {
     showError('Ошибка загрузки: ' + e.message);
@@ -167,8 +171,6 @@ async function runAnalyze(first) {
   } catch (e) { showError('Ошибка анализа: ' + e.message); return; }
 
   if (first) {
-    $('upload-section').hidden = true;
-    $('dashboard').hidden = false;
     buildSeasonFilter();
     buildFlagFilter();
     buildSubscriberSelect();

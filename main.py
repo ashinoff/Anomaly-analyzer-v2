@@ -20,6 +20,7 @@ import pandas as pd
 from fastapi import FastAPI, Form, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 from pathlib import Path
 
 from analyzer import analyze, detect_month_columns, FLAG_DEFINITIONS
@@ -37,7 +38,7 @@ XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 _UPLOADS: "OrderedDict[str, dict]" = OrderedDict()
 _FILES: "OrderedDict[str, pd.DataFrame]" = OrderedDict()
 _RESULTS: "OrderedDict[str, dict]" = OrderedDict()
-_MAX_KEEP = 6
+_MAX_KEEP = 2  # держим мало сессий в RAM — контейнер Amvera небольшой
 
 
 def _prune(store: OrderedDict):
@@ -173,13 +174,19 @@ async def upload_chunk(
     # все куски собраны — склеиваем и парсим Excel
     buf = b"".join(slot["parts"][i] for i in range(slot["total"]))
     _UPLOADS.pop(uploadId, None)
-    try:
-        df = pd.read_excel(io.BytesIO(buf))
+
+    def _parse(data):
+        d = pd.read_excel(io.BytesIO(data))
+        if not detect_month_columns(d):
+            raise ValueError("Не найдены столбцы помесячного потребления "
+                             "(ожидается формат «Январь 2024», «Февраль 2024» …)")
+        return d
+    try:  # парсинг Excel — в threadpool, чтобы не блокировать event-loop
+        df = await run_in_threadpool(_parse, buf)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     except Exception as e:
         raise HTTPException(400, f"Не удалось прочитать Excel: {e}")
-    if not detect_month_columns(df):
-        raise HTTPException(400, "Не найдены столбцы помесячного потребления "
-                                 "(ожидается формат «Январь 2024», «Февраль 2024» …)")
     _FILES[uploadId] = df
     _prune(_FILES)
     return {"ok": True, "complete": True, "file_id": uploadId,
@@ -187,8 +194,10 @@ async def upload_chunk(
 
 
 # ── Анализ ─────────────────────────────────────────────────────────────────
+# Синхронный def — FastAPI выполнит его в threadpool, поэтому тяжёлый analyze()
+# НЕ блокирует event-loop (иначе прокси Amvera отдаёт 503 на параллельные CSS/API).
 @app.post("/api/analyze")
-async def analyze_endpoint(payload: dict):
+def analyze_endpoint(payload: dict):
     file_id = payload.get("file_id")
     values = payload.get("params", {})
     try:
