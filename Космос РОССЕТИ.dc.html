@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#05070f;}
+  *{box-sizing:border-box;}
+  a{color:#5aa2ff;} a:hover{color:#8fc0ff;}
+  ::selection{background:rgba(90,162,255,.3);color:#fff;}
+  @keyframes floaty{0%{transform:translateY(0)}50%{transform:translateY(-8px)}100%{transform:translateY(0)}}
+  @keyframes glowpulse{0%,100%{opacity:.55}50%{opacity:1}}
+  @keyframes sweep{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+  @keyframes flick{0%,100%{opacity:.9}47%{opacity:.9}48%{opacity:.25}49%{opacity:.9}92%{opacity:.9}93%{opacity:.4}94%{opacity:.9}}
+  @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes ringspin{to{transform:rotate(360deg)}}
+  @keyframes beltdrift{to{transform:translate(-50%,-50%) rotate(360deg)}}
+</style>
+</helmet>
+<div style="position:relative;min-height:100vh;width:100%;overflow:hidden;font-family:'Barlow',system-ui,sans-serif;color:#e8eef8;background:radial-gradient(120% 90% at 78% -10%, #16264f 0%, #0a1230 34%, #05070f 72%);">
+
+  <canvas ref="{{ canvasRef }}" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+  <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(90,162,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(90,162,255,.055) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(120% 100% at 50% 0%,#000 40%,transparent 92%);"></div>
+
+  <div style="position:relative;z-index:2;max-width:1180px;margin:0 auto;padding:38px 34px 70px;">
+
+    <!-- TOP BAR -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:34px;animation:rise .6s ease both;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="position:relative;width:38px;height:38px;">
+          <div style="position:absolute;inset:0;border:1.5px solid rgba(90,162,255,.35);border-radius:50%;animation:ringspin 9s linear infinite;border-top-color:#5aa2ff;"></div>
+          <div style="position:absolute;inset:9px;border-radius:50%;background:radial-gradient(circle,#7fb4ff,#2e5ba8);box-shadow:0 0 16px #3f7fe0,0 0 4px #cfe2ff;animation:glowpulse 2.4s ease-in-out infinite;"></div>
+        </div>
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;letter-spacing:.24em;line-height:1;">РОССЕТИ</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.28em;color:#7d90b8;margin-top:4px;">ORBITAL GRID MONITOR</div>
+        </div>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:#7d90b8;text-align:right;line-height:1.9;">
+        <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:7px;height:7px;border-radius:50%;background:#2ee6a0;box-shadow:0 0 8px #2ee6a0;animation:glowpulse 1.4s infinite;"></span>КАНАЛ АКТИВЕН</span><br>
+        ДАННЫЕ НЕ СОХРАНЯЮТСЯ
+      </div>
+    </div>
+
+    <!-- HERO -->
+    <div style="position:relative;padding:34px 42px;margin-bottom:30px;border:1px solid rgba(90,162,255,.22);border-radius:6px;background:rgba(20,34,72,0.34);backdrop-filter:blur(10px);overflow:hidden;animation:rise .7s ease .05s both;">
+      <div style="position:absolute;top:0;left:0;width:34%;height:3px;background:linear-gradient(90deg,#C8102E,#ff5a72,transparent);box-shadow:0 0 14px #ff2d4d;"></div>
+      <i style="position:absolute;top:8px;left:8px;width:12px;height:12px;border-top:1.5px solid #5aa2ff;border-left:1.5px solid #5aa2ff;"></i>
+      <i style="position:absolute;top:8px;right:8px;width:12px;height:12px;border-top:1.5px solid #5aa2ff;border-right:1.5px solid #5aa2ff;"></i>
+      <i style="position:absolute;bottom:8px;left:8px;width:12px;height:12px;border-bottom:1.5px solid #5aa2ff;border-left:1.5px solid #5aa2ff;"></i>
+      <i style="position:absolute;bottom:8px;right:8px;width:12px;height:12px;border-bottom:1.5px solid #5aa2ff;border-right:1.5px solid #5aa2ff;"></i>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:28px;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.32em;color:#5aa2ff;margin-bottom:12px;">// ГЛУБОКОЕ СКАНИРОВАНИЕ ПОТРЕБЛЕНИЯ</div>
+          <h1 style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:clamp(18px,2.4vw,29px);line-height:1.18;letter-spacing:.14em;text-transform:uppercase;margin:0;white-space:nowrap;color:#dce6f7;text-shadow:0 0 26px rgba(90,162,255,.3);">Анализ <span style="position:relative;color:#8fc0ff;">аномального<span style="position:absolute;left:0;right:0;bottom:-4px;height:2px;background:linear-gradient(90deg,#C8102E,#ff5a72);box-shadow:0 0 12px #ff2d4d;animation:flick 3.5s infinite;"></span></span> потребления</h1>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9fb2d8;letter-spacing:.06em;text-align:right;line-height:1.9;">
+          <span style="display:inline-block;border-left:3px solid #C8102E;padding-left:9px;font-weight:600;color:#fff;letter-spacing:.16em;">РЕЕСТР АБОНЕНТОВ</span><br>
+          орбита · телеметрия ПУ<br>
+          <span style="color:#5aa2ff;">v2.4 — реальное время</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG: analysis parameters (tidy grid) -->
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;color:#7d90b8;margin:6px 0 12px;">ПАРАМЕТРЫ АНАЛИЗА</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:40px;animation:rise .6s ease .1s both;">
+      <div style="display:flex;align-items:center;gap:11px;padding:14px 16px;border:1px solid rgba(90,162,255,.4);border-radius:6px;background:rgba(20,34,72,0.34);backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.4),0 0 14px rgba(90,162,255,.14);animation-delay:0s;transition:box-shadow .25s,border-color .25s;" style-hover="box-shadow:0 8px 26px rgba(0,0,0,.5),0 0 22px rgba(90,162,255,.5);border-color:#7fb4ff;">
+        <span style="color:#7fb4ff;display:inline-flex;flex:none;filter:drop-shadow(0 0 5px #5aa2ff);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1l2.1-2.1M17 7l2.1-2.1"></path><circle cx="12" cy="12" r="4"></circle></svg></span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:#9fb2d8;text-transform:uppercase;">Период анализа</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#eaf1ff;margin-left:auto;">36 мес</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:14px 16px;border:1px solid rgba(90,162,255,.4);border-radius:6px;background:rgba(20,34,72,0.34);backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.4),0 0 14px rgba(90,162,255,.14);animation-delay:.6s;transition:box-shadow .25s,border-color .25s;" style-hover="box-shadow:0 8px 26px rgba(0,0,0,.5),0 0 22px rgba(90,162,255,.5);border-color:#7fb4ff;">
+        <span style="color:#ff8ea0;display:inline-flex;flex:none;filter:drop-shadow(0 0 5px #ff5a72);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:#9fb2d8;text-transform:uppercase;">Порог падения</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#ffb3bf;margin-left:auto;">0.80</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:14px 16px;border:1px solid rgba(90,162,255,.4);border-radius:6px;background:rgba(20,34,72,0.34);backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.4),0 0 14px rgba(90,162,255,.14);animation-delay:1.2s;transition:box-shadow .25s,border-color .25s;" style-hover="box-shadow:0 8px 26px rgba(0,0,0,.5),0 0 22px rgba(90,162,255,.5);border-color:#7fb4ff;">
+        <span style="color:#7fb4ff;display:inline-flex;flex:none;filter:drop-shadow(0 0 5px #5aa2ff);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 13.5"></polyline></svg></span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:#9fb2d8;text-transform:uppercase;">Окно молчания</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#eaf1ff;margin-left:auto;">6 мес</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:14px 16px;border:1px solid rgba(90,162,255,.4);border-radius:6px;background:rgba(20,34,72,0.34);backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.4),0 0 14px rgba(90,162,255,.14);animation-delay:1.8s;transition:box-shadow .25s,border-color .25s;" style-hover="box-shadow:0 8px 26px rgba(0,0,0,.5),0 0 22px rgba(90,162,255,.5);border-color:#7fb4ff;">
+        <span style="color:#ffca8f;display:inline-flex;flex:none;filter:drop-shadow(0 0 5px #E37222);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:#9fb2d8;text-transform:uppercase;">Лимит мощности</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#ffd9ad;margin-left:auto;">15 кВт</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:14px 16px;border:1px solid rgba(90,162,255,.4);border-radius:6px;background:rgba(20,34,72,0.34);backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.4),0 0 14px rgba(90,162,255,.14);animation-delay:2.4s;transition:box-shadow .25s,border-color .25s;" style-hover="box-shadow:0 8px 26px rgba(0,0,0,.5),0 0 22px rgba(90,162,255,.5);border-color:#7fb4ff;">
+        <span style="color:#7fb4ff;display:inline-flex;flex:none;filter:drop-shadow(0 0 5px #5aa2ff);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg></span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:#9fb2d8;text-transform:uppercase;">Порог риск-балла</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#eaf1ff;margin-left:auto;">5</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:14px 16px;border:1px solid rgba(90,162,255,.4);border-radius:6px;background:rgba(20,34,72,0.34);backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.4),0 0 14px rgba(90,162,255,.14);animation-delay:3s;transition:box-shadow .25s,border-color .25s;" style-hover="box-shadow:0 8px 26px rgba(0,0,0,.5),0 0 22px rgba(90,162,255,.5);border-color:#7fb4ff;">
+        <span style="color:#8ff0cf;display:inline-flex;flex:none;filter:drop-shadow(0 0 5px #2ee6a0);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"></rect><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line></svg></span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:#9fb2d8;text-transform:uppercase;">Чувствит. ML</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#b6f5df;margin-left:auto;">Выс.</span>
+      </div>
+    </div>
+
+    <!-- METRICS -->
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;color:#7d90b8;margin:0 0 12px;">ТЕЛЕМЕТРИЯ</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px;">
+      <sc-for list="{{ metrics }}" as="m" hint-placeholder-count="4">
+        <div style="position:relative;padding:20px 20px 22px;border:1px solid rgba(90,162,255,.2);border-radius:6px;background:rgba(18,30,64,0.30);backdrop-filter:blur(10px);overflow:hidden;animation:rise .6s ease both;">
+          <div style="position:absolute;top:-40%;left:0;width:40%;height:180%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.09),transparent);animation:sweep 5s ease-in-out infinite;animation-delay:{{ m.delay }};"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8ea3cc;margin-bottom:14px;font-weight:600;">{{ m.label }}</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:44px;line-height:1;color:{{ m.color }};text-shadow:0 0 22px {{ m.glow }};">{{ m.display }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- SPLIT: flags + kv -->
+    <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:34px;align-items:start;">
+
+      <div style="animation:rise .6s ease .1s both;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;color:#5aa2ff;margin-bottom:5px;">РАСПРЕДЕЛЕНИЕ</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:26px;margin:0 0 18px;padding-bottom:10px;border-bottom:1px solid rgba(90,162,255,.28);">Сигналы по абонентам</div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 15px;margin-bottom:10px;border:1px solid rgba(90,162,255,.4);border-radius:6px;background:rgba(20,34,72,0.34);backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 14px rgba(90,162,255,.18);">
+          <span style="color:#ff5a72;display:inline-flex;flex:none;filter:drop-shadow(0 0 6px #ff5a72);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg></span>
+          <span style="font-size:14.5px;color:#dbe6f7;"><b style="color:#fff;">Подозрение на хищение</b> — резкое и устойчивое падение потребления</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 15px;margin-bottom:10px;border:1px solid rgba(90,162,255,.4);border-radius:6px;background:rgba(20,34,72,0.34);backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 14px rgba(90,162,255,.18);">
+          <span style="color:#7fb4ff;display:inline-flex;flex:none;filter:drop-shadow(0 0 6px #7fb4ff);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="3 4"></circle></svg></span>
+          <span style="font-size:14.5px;color:#dbe6f7;"><b style="color:#fff;">Долгое молчание ПУ</b> — долгие пропуски в показаниях</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 15px;margin-bottom:10px;border:1px solid rgba(90,162,255,.4);border-radius:6px;background:rgba(20,34,72,0.34);backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 14px rgba(90,162,255,.18);">
+          <span style="color:#ffb066;display:inline-flex;flex:none;filter:drop-shadow(0 0 6px #ffb066);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span>
+          <span style="font-size:14.5px;color:#dbe6f7;"><b style="color:#fff;">Превышение мощности</b> — пиковое потребление выше договора</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 15px;margin-bottom:10px;border:1px solid rgba(90,162,255,.4);border-radius:6px;background:rgba(20,34,72,0.34);backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 14px rgba(90,162,255,.18);">
+          <span style="color:#2ee6a0;display:inline-flex;flex:none;filter:drop-shadow(0 0 6px #2ee6a0);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"></rect><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line></svg></span>
+          <span style="font-size:14.5px;color:#dbe6f7;"><b style="color:#fff;">ML-аномалия</b> — необычный профиль по мнению ИИ-модели</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 15px;margin-top:4px;border:1px solid rgba(46,230,160,.4);border-radius:6px;background:rgba(16,44,38,0.32);backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.4),0 0 14px rgba(46,230,160,.18);color:#8ff0cf;font-weight:600;">
+          <span style="color:#2ee6a0;display:inline-flex;flex:none;filter:drop-shadow(0 0 6px #2ee6a0);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+          Без флагов — чистый профиль
+        </div>
+      </div>
+
+      <div style="animation:rise .6s ease .15s both;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;color:#5aa2ff;margin-bottom:5px;">КАРТОЧКА · АБ-004182</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:26px;margin:0 0 18px;padding-bottom:10px;border-bottom:1px solid rgba(90,162,255,.28);">Профиль точки учёта</div>
+
+        <div style="position:relative;border:1px solid rgba(90,162,255,.2);border-radius:6px;background:rgba(18,30,64,0.30);padding:6px 20px;backdrop-filter:blur(10px);">
+          <i style="position:absolute;top:7px;right:7px;width:11px;height:11px;border-top:1.5px solid #5aa2ff;border-right:1.5px solid #5aa2ff;"></i>
+          <i style="position:absolute;bottom:7px;left:7px;width:11px;height:11px;border-bottom:1.5px solid #5aa2ff;border-left:1.5px solid #5aa2ff;"></i>
+          <sc-for list="{{ kv }}" as="row" hint-placeholder-count="4">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:12px 0;border-bottom:1px solid rgba(90,162,255,.12);">
+              <span style="color:#9fb2d8;font-size:13.5px;">{{ row.k }}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:14px;color:{{ row.color }};text-shadow:0 0 10px {{ row.glow }};">{{ row.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;color:#7d90b8;margin:22px 0 9px;">РАСПОЗНАНО В ВЫГРУЗКЕ</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <sc-for list="{{ pills }}" as="p" hint-placeholder-count="4">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:6px 11px;border-radius:4px;border:1px solid {{ p.border }};background:{{ p.bg }};color:{{ p.color }};">{{ p.t }}</span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="margin-top:52px;padding-top:16px;border-top:1px solid rgba(90,162,255,.25);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.2em;color:#6f83ac;text-transform:uppercase;text-align:center;">
+      Прототип · Данные не сохраняются · Работает в браузере · РОССЕТИ ORBITAL
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { counts: [0,0,0,0] };
+
+  componentDidMount(){
+    if(!this.refs) this.refs={};
+    if(this.refs.canvasRef) this.setupCanvas(this.refs.canvasRef);
+    if(this.refs.towerRef) this.refs.towerRef.innerHTML = this.buildTower();
+    this.setupOrbit();
+    // count-up
+    const targets=[1240,36,218,47]; const dur=1400; const t0=performance.now();
+    const tick=(now)=>{ const p=Math.min(1,(now-t0)/dur); const e=1-Math.pow(1-p,3);
+      this.setState({counts:targets.map(t=>Math.round(t*e))});
+      if(p<1) this._raf=requestAnimationFrame(tick); };
+    this._raf=requestAnimationFrame(tick);
+  }
+  componentWillUnmount(){ cancelAnimationFrame(this._raf); cancelAnimationFrame(this._raf2); cancelAnimationFrame(this._raf3); window.removeEventListener('resize',this._rs); }
+
+  buildTower(){
+    const cx=125; const parts=[];
+    const L=(x1,y1,x2,y2,w,o)=>`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="url(#steel)" stroke-width="${w||1.3}" stroke-linecap="round" opacity="${o==null?1:o}"/>`;
+    // ---- main body (tapered lattice) ----
+    const yB=422,yT=170,wB=54,wT=17,lv=8;
+    const Y=i=>yB+(yT-yB)*(i/lv), HW=i=>wB+(wT-wB)*(i/lv);
+    for(let i=0;i<=lv;i++){const y=Y(i),hw=HW(i);parts.push(L(cx-hw,y,cx+hw,y,1.4));}
+    for(let i=0;i<lv;i++){const y0=Y(i),y1=Y(i+1),h0=HW(i),h1=HW(i+1);
+      parts.push(L(cx-h0,y0,cx-h1,y1,1.6)); parts.push(L(cx+h0,y0,cx+h1,y1,1.6));
+      parts.push(L(cx-h0,y0,cx+h1,y1,1,.85)); parts.push(L(cx+h0,y0,cx-h1,y1,1,.85));}
+    // ---- head mast ----
+    const yHB=170,yHT=104,wHB=17,wHT=11,lv2=3;
+    const Y2=i=>yHB+(yHT-yHB)*(i/lv2), HW2=i=>wHB+(wHT-wHB)*(i/lv2);
+    for(let i=0;i<=lv2;i++){const y=Y2(i),hw=HW2(i);parts.push(L(cx-hw,y,cx+hw,y,1.3));}
+    for(let i=0;i<lv2;i++){const y0=Y2(i),y1=Y2(i+1),h0=HW2(i),h1=HW2(i+1);
+      parts.push(L(cx-h0,y0,cx-h1,y1,1.4)); parts.push(L(cx+h0,y0,cx+h1,y1,1.4));
+      parts.push(L(cx-h0,y0,cx+h1,y1,1,.8)); parts.push(L(cx+h0,y0,cx-h1,y1,1,.8));}
+    // ---- cross-arms (traverse) ----
+    const arm=(y,W,dir)=>{ const r=6; const x0=cx+dir*(HW2( (yHB-y)/(yHB-yHT)*lv2 )||13); const xr=cx+dir*13, xt=cx+dir*W;
+      const a=[]; a.push(L(xr,y-r,xt,y,1.4)); a.push(L(xr,y+r,xt,y,1.4)); a.push(L(xr,y-r,xr,y+r,1.3));
+      const mx=cx+dir*(13+(W-13)*0.5); a.push(L(xr,y-r,mx,y,1,.8)); a.push(L(xr,y+r,mx,y,1,.8)); a.push(L(mx,y-3,xt,y,1,.8));
+      return a.join(''); };
+    // insulator string hanging from arm tip -> conductor
+    const insul=(x,y)=>{ const len=30; const a=[]; a.push(L(x,y,x,y+len,1.1,.9));
+      for(let k=1;k<=3;k++){const yy=y+len*k/4; a.push(`<circle cx="${x}" cy="${yy.toFixed(1)}" r="2.2" fill="none" stroke="url(#steel)" stroke-width="1"/>`);} 
+      a.push(`<circle cx="${x}" cy="${(y+len).toFixed(1)}" r="3.4" fill="#7fb4ff"><animate attributeName="opacity" values="0.6;1;0.6" dur="2.4s" repeatCount="indefinite"/></circle>`); return a.join(''); };
+    // lower + upper arms both sides
+    parts.push(arm(150,102,1)); parts.push(arm(150,102,-1));
+    parts.push(arm(120,74,1));  parts.push(arm(120,74,-1));
+    parts.push(insul(cx+102,150)); parts.push(insul(cx-102,150));
+    parts.push(insul(cx+74,120));  parts.push(insul(cx-74,120));
+    // ---- earth-wire peak ----
+    parts.push(L(cx-40,96,cx+40,96,1.3)); // top arm
+    parts.push(L(cx-13,104,cx-40,96,1,.8)); parts.push(L(cx+13,104,cx+40,96,1,.8));
+    parts.push(L(cx-11,104,cx,70,1.5)); parts.push(L(cx+11,104,cx,70,1.5)); // apex
+    parts.push(L(cx,70,cx,60,1.5));
+    parts.push(`<circle cx="${cx}" cy="58" r="2.6" fill="#bfe0ff"/>`);
+    parts.push(`<circle cx="${cx-40}" cy="96" r="3" fill="#7fb4ff"/>`); parts.push(`<circle cx="${cx+40}" cy="96" r="3" fill="#7fb4ff"/>`);
+    // ---- energy sparks rising up the mast ----
+    for(let s=0;s<3;s++){ const b=(s*0.9).toFixed(1);
+      parts.push(`<circle r="2.8" fill="#cfe8ff"><animate attributeName="cy" values="418;70" dur="2.7s" begin="${b}s" repeatCount="indefinite"/><animate attributeName="cx" values="${cx};${cx}" dur="2.7s" begin="${b}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.8;1" dur="2.7s" begin="${b}s" repeatCount="indefinite"/></circle>`); }
+    // ---- base footings ----
+    parts.push(L(cx-54,422,cx-60,432,2)); parts.push(L(cx+54,422,cx+60,432,2));
+    parts.push(L(cx-64,432,cx-56,432,2)); parts.push(L(cx+56,432,cx+64,432,2));
+
+    return `<svg viewBox="0 0 250 440" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#aecdff"/><stop offset="0.5" stop-color="#5f93e0"/><stop offset="1" stop-color="#2e5ba8"/>
+      </linearGradient></defs>${parts.join('')}</svg>`;
+  }
+
+  setupOrbit(){
+    const stage=this.refs&&this.refs.stageRef; if(!stage) return;
+    const nodes=[].slice.call(stage.querySelectorAll('.orbit-node')); const N=nodes.length; if(!N) return;
+    const tilts=[12,72,132].map(d=>d*Math.PI/180);
+    const start=performance.now();
+    const loop=(now)=>{
+      const w=stage.clientWidth, h=stage.clientHeight;
+      const cx=w/2, cy=h*0.52;
+      const rx=Math.min(w*0.42,400), ry=150;
+      const t=(now-start)/1000;
+      nodes.forEach((el,i)=>{
+        const orbit=i%tilts.length; const th=tilts[orbit];
+        const spd=0.85+orbit*0.22;             // electron zip, per-shell speed
+        const a=t*spd + Math.floor(i/tilts.length)*Math.PI + orbit*1.3;
+        const lx=rx*Math.cos(a), ly=ry*Math.sin(a);
+        const x=cx + lx*Math.cos(th) - ly*Math.sin(th);
+        const y=cy + lx*Math.sin(th) + ly*Math.cos(th);
+        let d=0.5+0.5*((y-cy)/rx); d=Math.max(0,Math.min(1,d));   // 0 back .. 1 front
+        const sc=0.64+0.44*d;
+        el.style.left=x+'px'; el.style.top=y+'px';
+        el.style.transform='translate(-50%,-50%) scale('+sc.toFixed(3)+')';
+        el.style.opacity=(0.34+0.66*d).toFixed(3);
+        el.style.zIndex = d>0.5 ? 5 : 1;
+        el.style.filter = d<0.45 ? 'blur(0.8px)' : 'none';
+      });
+      this._raf3=requestAnimationFrame(loop);
+    };
+    this._raf3=requestAnimationFrame(loop);
+  }
+
+  setupCanvas(cv){
+    const ctx=cv.getContext('2d'); let W,H,dpr;
+    const stars=[]; let arcs=[]; let nodes=[];
+    const resize=()=>{ dpr=Math.min(2,window.devicePixelRatio||1); const r=cv.getBoundingClientRect();
+      W=r.width; H=r.height; cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+      stars.length=0; const n=Math.floor(W*H/5200);
+      for(let i=0;i<n;i++) stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.3,tw:Math.random()*Math.PI*2,sp:Math.random()*.02+.004,vy:Math.random()*.06+.02});
+      nodes.length=0; const m=Math.floor(W/230)+3;
+      for(let i=0;i<m;i++) nodes.push({x:Math.random()*W,y:Math.random()*H*.85});
+    };
+    this._rs=resize; window.addEventListener('resize',resize); resize();
+    const spawnArc=()=>{ if(nodes.length<2) return; const a=nodes[Math.floor(Math.random()*nodes.length)]; let b=nodes[Math.floor(Math.random()*nodes.length)]; let g=0; while(b===a && g++<5) b=nodes[Math.floor(Math.random()*nodes.length)]; if(a===b) return;
+      const segs=8, pts=[]; for(let i=0;i<=segs;i++){ const t=i/segs; const jx=(Math.random()-.5)*36*(t*(1-t)*4); const jy=(Math.random()-.5)*36*(t*(1-t)*4); pts.push([a.x+(b.x-a.x)*t+jx, a.y+(b.y-a.y)*t+jy]); }
+      arcs.push({pts,life:1,hue:Math.random()<.15?'red':'blue'}); };
+    let last=0;
+    const draw=(now)=>{
+      ctx.clearRect(0,0,W,H);
+      for(const s of stars){ s.tw+=s.sp; s.y+=s.vy; if(s.y>H){s.y=0;s.x=Math.random()*W;} const a=.35+.45*Math.sin(s.tw);
+        ctx.beginPath(); ctx.fillStyle='rgba(200,222,255,'+a.toFixed(3)+')'; ctx.arc(s.x,s.y,s.r,0,7); ctx.fill(); }
+      for(const nd of nodes){ ctx.beginPath(); const g=ctx.createRadialGradient(nd.x,nd.y,0,nd.x,nd.y,7); g.addColorStop(0,'rgba(120,180,255,.85)'); g.addColorStop(1,'rgba(120,180,255,0)'); ctx.fillStyle=g; ctx.arc(nd.x,nd.y,7,0,7); ctx.fill(); }
+      if(now-last>620+Math.random()*900){ spawnArc(); last=now; }
+      arcs=arcs.filter(ar=>ar.life>0);
+      for(const ar of arcs){ ar.life-=.045; const col=ar.hue==='red'?'255,70,90':'150,200,255'; ctx.lineJoin='round';
+        ctx.strokeStyle='rgba('+col+','+(ar.life*.28).toFixed(3)+')'; ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(ar.pts[0][0],ar.pts[0][1]); for(let i=1;i<ar.pts.length;i++) ctx.lineTo(ar.pts[i][0],ar.pts[i][1]); ctx.stroke();
+        ctx.strokeStyle='rgba('+col+','+(ar.life).toFixed(3)+')'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(ar.pts[0][0],ar.pts[0][1]); for(let i=1;i<ar.pts.length;i++) ctx.lineTo(ar.pts[i][0],ar.pts[i][1]); ctx.stroke(); }
+      this._raf2=requestAnimationFrame(draw);
+    };
+    this._raf2=requestAnimationFrame(draw);
+  }
+
+  fmt(n){ return n.toLocaleString('ru-RU').replace(/,/g,' '); }
+
+  renderVals(){
+    const c=this.state.counts;
+    const setRef=(k)=>(el)=>{ if(!this.refs) this.refs={}; this.refs[k]=el; };
+    return {
+      canvasRef:setRef('canvasRef'), stageRef:setRef('stageRef'), towerRef:setRef('towerRef'),
+      metrics:[
+        {label:'Абонентов в файле', display:this.fmt(c[0]), color:'#dbe6f7', bar:'linear-gradient(90deg,#2e5ba8,#7fb4ff)', glow:'rgba(90,162,255,.5)', delay:'0s'},
+        {label:'Месяцев данных', display:this.fmt(c[1]), color:'#dbe6f7', bar:'linear-gradient(90deg,#2e5ba8,#7fb4ff)', glow:'rgba(90,162,255,.5)', delay:'1.2s'},
+        {label:'С флагами', display:this.fmt(c[2]), color:'#ffca8f', bar:'linear-gradient(90deg,#E37222,#ffb066)', glow:'rgba(227,114,34,.5)', delay:'2.4s'},
+        {label:'Высокий риск · балл ≥ 5', display:this.fmt(c[3]), color:'#ff8ea0', bar:'linear-gradient(90deg,#C8102E,#ff5a72)', glow:'rgba(255,45,77,.6)', delay:'3.6s'},
+      ],
+      kv:[
+        {k:'Активных месяцев', v:'34', color:'#dbe6f7', glow:'rgba(90,162,255,.4)'},
+        {k:'Среднее, кВт·ч/мес', v:'512.40', color:'#dbe6f7', glow:'rgba(90,162,255,.4)'},
+        {k:'Доля падения', v:'0.84', color:'#ffca8f', glow:'rgba(227,114,34,.5)'},
+        {k:'Риск-балл', v:'7', color:'#ff8ea0', glow:'rgba(255,45,77,.6)'},
+      ],
+      pills:[
+        {t:'Заводской номер ПУ', found:true},
+        {t:'Наименование точки учёта', found:true},
+        {t:'Разрешенная мощность', found:true},
+        {t:'Вид потребителя', found:false},
+      ].map(p=>({t:p.t,
+        border:p.found?'rgba(90,162,255,.4)':'rgba(90,162,255,.15)',
+        bg:p.found?'rgba(46,91,168,.28)':'rgba(20,30,60,.4)',
+        color:p.found?'#bcd6ff':'#7d90b8'})),
+    };
+  }
+}
+</script>
+</body>
+</html>
