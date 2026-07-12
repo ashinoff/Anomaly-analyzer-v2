@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Превью дизайна · РОССЕТИ Космос</title>
+
+<!-- ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ ПО СТИЛЯМ.
+     Дизайнер правит ../assets/app.css и обновляет эту страницу.
+     Тот же файл подключается в самом приложении (app.py). -->
+<link rel="stylesheet" href="../assets/app.css" />
+
+<style>
+/* ── ТОЛЬКО каркас превью — В ПРИЛОЖЕНИЕ НЕ ПОПАДАЕТ. ──────────────
+   Имитирует то, что в Streamlit даёт страница/тема: тёмный фон,
+   отступы контейнера и раскладку st.columns(). Космический фон,
+   звёзды и грид приходят из app.css (body::before / ::after).       */
+body { margin: 0; }
+.preview-wrap { max-width: 1120px; margin: 0 auto; padding: 1.6rem 1.3rem 4rem; position: relative; z-index: 1; }
+.preview-note { background: rgba(20,34,72,.34); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+                border: 1px solid rgba(90,162,255,.25); border-radius: 6px;
+                padding: .9rem 1.1rem; font-size: .85rem; color: #9fb2d8; margin-bottom: 1.6rem;
+                font-family: 'Barlow', system-ui, sans-serif; }
+.preview-note b { color: #cfe0ff; }
+.preview-note code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .82em; color: #7fb4ff; }
+.preview-h { font-size: .7rem; text-transform: uppercase; letter-spacing: .14em;
+             color: #7d90b8; font-family: 'JetBrains Mono', ui-monospace, monospace; margin: 2.2rem 0 .6rem; }
+.preview-cols { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.preview-cols > * { flex: 1 1 180px; }        /* имитация st.columns(4) */
+</style>
+</head>
+
+<body>
+<div class="preview-wrap">
+
+  <div class="preview-note">
+    <b>Что здесь можно менять:</b> только блоки, которые приложение рисует само
+    (классы ниже) — они полностью в <code>assets/app.css</code>.
+    <b>Космический фон, звёзды и грид</b> — это <code>body::before</code> и
+    <code>body::after</code> в том же CSS, поэтому переносятся в приложение вместе с ним.
+    <b>Чего здесь нет:</b> виджеты Streamlit (загрузчик, слайдеры, вкладки, графики) —
+    их вид задаёт тема в <code>.streamlit/config.toml</code>
+    (рекомендую: background <code>#05070f</code>, secondaryBackground <code>#0a1230</code>,
+    primaryColor <code>#5aa2ff</code>, textColor <code>#e8eef8</code>).
+  </div>
+
+  <!-- ═══ HERO ═══ -->
+  <div class="preview-h">.hero</div>
+  <div class="hero">
+    <h1 class="hero-title">Анализ <span class="hero-em">аномального</span> потребления</h1>
+    <div class="hero-meta">
+      <span class="badge">РЕЕСТР АБОНЕНТОВ</span><br/>
+      орбита · телеметрия ПУ<br/>
+      Данные не сохраняются
+    </div>
+  </div>
+
+  <!-- ═══ ПАРАМЕТРЫ АНАЛИЗА ═══ -->
+  <div class="preview-h">.params-grid / .param-cell</div>
+  <div class="params-grid">
+    <div class="param-cell">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/><circle cx="12" cy="12" r="4"/></svg></span>
+      <span class="param-label">Период анализа</span><span class="param-value">36 мес</span>
+    </div>
+    <div class="param-cell">
+      <span class="icon" style="color:#ff8ea0;filter:drop-shadow(0 0 5px #ff5a72);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+      <span class="param-label">Порог падения</span><span class="param-value" style="color:#ffb3bf;">0.80</span>
+    </div>
+    <div class="param-cell">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 13.5"/></svg></span>
+      <span class="param-label">Окно молчания</span><span class="param-value">6 мес</span>
+    </div>
+    <div class="param-cell">
+      <span class="icon" style="color:#ffca8f;filter:drop-shadow(0 0 5px #E37222);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+      <span class="param-label">Лимит мощности</span><span class="param-value" style="color:#ffd9ad;">15 кВт</span>
+    </div>
+    <div class="param-cell">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>
+      <span class="param-label">Порог риск-балла</span><span class="param-value">5</span>
+    </div>
+    <div class="param-cell">
+      <span class="icon" style="color:#8ff0cf;filter:drop-shadow(0 0 5px #2ee6a0);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg></span>
+      <span class="param-label">Чувствит. ML</span><span class="param-value" style="color:#b6f5df;">Выс.</span>
+    </div>
+  </div>
+
+  <!-- ═══ КАРТОЧКИ МЕТРИК (в приложении — st.columns(4)) ═══ -->
+  <div class="preview-h">.metric-cell &times;4 (внутри st.columns)</div>
+  <div class="preview-cols">
+    <div class="metric-cell">
+      <div class="metric-label">Абонентов в файле</div>
+      <div class="metric-value">1 240</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Месяцев данных</div>
+      <div class="metric-value">36</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">С флагами</div>
+      <div class="metric-value">218</div>
+    </div>
+    <div class="metric-cell" style="--cell-accent:var(--red);">
+      <div class="metric-label">Высокий риск (балл &ge; 5)</div>
+      <div class="metric-value red">47</div>
+    </div>
+  </div>
+
+  <!-- ═══ СЕКЦИОННЫЕ ЗАГОЛОВКИ ═══ -->
+  <div class="preview-h">.section-label / .section-title</div>
+  <div class="section-label">Распределение</div>
+  <div class="section-title">Сигналы по абонентам</div>
+
+  <!-- ═══ ФЛАГИ ═══ -->
+  <div class="preview-h">.flag-row (SVG-иконки) / .flag-empty</div>
+  <div class="flag-row" style="--flag-color:#ff5a72;">
+    <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg></span>
+    <span class="name"><b>Подозрение на хищение</b> — резкое и устойчивое падение потребления</span>
+  </div>
+  <div class="flag-row" style="--flag-color:#7fb4ff;">
+    <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="3 4"/></svg></span>
+    <span class="name"><b>Долгое молчание ПУ</b> — долгие пропуски в показаниях</span>
+  </div>
+  <div class="flag-row" style="--flag-color:#ffb066;">
+    <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+    <span class="name"><b>Превышение мощности</b> — пиковое потребление выше договора</span>
+  </div>
+  <div class="flag-row" style="--flag-color:#2ee6a0;">
+    <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg></span>
+    <span class="name"><b>ML-аномалия</b> — необычный профиль по мнению ИИ-модели</span>
+  </div>
+  <div style="height:.6rem"></div>
+  <div class="flag-empty">
+    <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+    Без флагов — чистый профиль
+  </div>
+
+  <!-- ═══ KEY-VALUE ═══ -->
+  <div class="preview-h">.kv-list / .kv-row</div>
+  <div class="kv-list" style="max-width:520px;">
+    <div class="kv-row"><span class="kv-key">Активных месяцев</span><span class="kv-val">34</span></div>
+    <div class="kv-row"><span class="kv-key">Среднее, кВт&middot;ч/мес</span><span class="kv-val">512.40</span></div>
+    <div class="kv-row"><span class="kv-key">Доля падения</span><span class="kv-val">0.84</span></div>
+    <div class="kv-row"><span class="kv-key">Риск-балл</span><span class="kv-val">7</span></div>
+  </div>
+
+  <!-- ═══ PILLS ═══ -->
+  <div class="preview-h">.pill / .pill.found</div>
+  <div>
+    <span class="pill found">Заводской номер ПУ</span>
+    <span class="pill found">Наименование точки учёта</span>
+    <span class="pill found">Разрешенная мощность</span>
+    <span class="pill">Вид потребителя</span>
+  </div>
+
+  <!-- ═══ ЗАГЛУШКА ═══ -->
+  <div class="preview-h">.empty-state</div>
+  <div class="empty-state">
+    Перетащите выгрузку выше, чтобы начать анализ
+    <span class="small">Минимум: столбцы вида «Январь 2024», «Февраль 2024»…</span>
+  </div>
+
+  <!-- ═══ ПОДВАЛ ═══ -->
+  <div class="preview-h">.footer-strip</div>
+  <div class="footer-strip">
+    Прототип &middot; Данные не сохраняются &middot; Работает в браузере &middot; РОССЕТИ ORBITAL
+  </div>
+
+</div>
+</body>
+</html>
