@@ -93,6 +93,7 @@ function buildParamGroups() {
       const k = inp.dataset.key;
       PARAMS[k] = parseFloat(inp.value);
       const lbl = $('val-' + k); if (lbl) lbl.textContent = inp.value;
+      if (SUMMARY) renderParamsGrid();
       scheduleAnalyze();
     });
   });
@@ -172,37 +173,82 @@ async function runAnalyze(first) {
     buildFlagFilter();
     buildSubscriberSelect();
   }
-  renderMetrics();
+  renderParamsGrid();
+  renderPills();
+  renderMetrics(first);
   renderReportLine();
   renderSummaryCharts();
   renderRegistry();
   if (SUMMARY && document.querySelector('.tab.active').dataset.tab === 'subscriber') onSubscriberChange();
 }
 
-function renderMetrics() {
+// SVG-иконки для сетки параметров (как в канвасе).
+const PICON = {
+  period: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/><circle cx="12" cy="12" r="4"/></svg>',
+  drop: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+  clock: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 13.5"/></svg>',
+  power: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  bars: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>',
+  ml: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>',
+};
+
+function renderParamsGrid() {
+  const months = SUMMARY ? SUMMARY.metrics.months_detected + ' мес' : '—';
+  const drop = ((PARAMS.theft_drop_pct || 0) / 100).toFixed(2);
+  const cells = [
+    ['#7fb4ff', PICON.period, 'Период анализа', months, '#eaf1ff'],
+    ['#ff8ea0', PICON.drop, 'Порог падения', drop, '#ffb3bf'],
+    ['#7fb4ff', PICON.clock, 'Окно молчания', (PARAMS.silence_months || 0) + ' мес', '#eaf1ff'],
+    ['#ffca8f', PICON.power, 'Лимит мощности', '×' + (+PARAMS.power_overrun_ratio || 0).toFixed(1), '#ffd9ad'],
+    ['#7fb4ff', PICON.bars, 'Порог риск-балла', '5', '#eaf1ff'],
+    ['#8ff0cf', PICON.ml, 'Чувствит. ML', (PARAMS.iso_contamination || 0) + '%', '#b6f5df'],
+  ];
+  $('params-grid').innerHTML = cells.map(([c, ic, lab, val, vc]) =>
+    `<div class="param-cell"><span class="icon" style="color:${c};filter:drop-shadow(0 0 5px ${c});">${ic}</span>
+     <span class="param-label">${esc(lab)}</span><span class="param-value" style="color:${vc};">${esc(val)}</span></div>`).join('');
+}
+
+function renderPills() {
+  const found = Object.values((SUMMARY.report.columns_found) || {});
+  $('pills').innerHTML = found.length
+    ? '<span class="section-label" style="margin:.2rem 0;">Распознано в выгрузке</span><div>' +
+      found.map(v => `<span class="pill found">${esc(v)}</span>`).join('') + '</div>'
+    : '';
+}
+
+function renderMetrics(animate) {
   const m = SUMMARY.metrics;
   const cards = [
-    ['Абонентов в файле', fmtInt(m.total_rows), ''],
-    ['Месяцев данных', String(m.months_detected), ''],
-    ['С флагами', fmtInt(m.n_with_flags), 'style="--cell-accent:var(--orange);"'],
-    ['Высокий риск (балл ≥ 5)', fmtInt(m.n_high_risk), 'cls-red'],
+    ['Абонентов в файле', m.total_rows, ''],
+    ['Месяцев данных', m.months_detected, ''],
+    ['С флагами', m.n_with_flags, 'orange'],
+    ['Высокий риск (балл ≥ 5)', m.n_high_risk, 'red'],
   ];
   $('metrics').innerHTML = cards.map(([label, val, opt]) => {
-    const style = opt.startsWith('style') ? opt : '';
-    const vcls = opt === 'cls-red' ? ' red' : '';
-    const acc = opt === 'cls-red' ? 'style="--cell-accent:var(--red);"' : style;
-    return `<div class="metric-cell" ${acc} style_="flex:1 1 180px" >
-      <div class="metric-label">${esc(label)}</div>
-      <div class="metric-value${vcls}">${val}</div></div>`;
+    const acc = opt === 'red' ? 'style="--cell-accent:var(--red);"'
+              : opt === 'orange' ? 'style="--cell-accent:var(--orange);"' : '';
+    const vcls = opt === 'red' ? ' red' : '';
+    return `<div class="metric-cell" ${acc}><div class="metric-label">${esc(label)}</div>
+      <div class="metric-value${vcls}" data-t="${val}">${animate ? '0' : fmtInt(val)}</div></div>`;
   }).join('');
   $('metrics').querySelectorAll('.metric-cell').forEach(c => c.style.flex = '1 1 180px');
+  if (animate) countUp();
+}
+
+function countUp() {
+  const els = [...$('metrics').querySelectorAll('.metric-value')];
+  const t0 = performance.now(), dur = 1100;
+  (function tick(now) {
+    const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    els.forEach(el => { el.textContent = fmtInt(Math.round((+el.dataset.t) * e)); });
+    if (p < 1) requestAnimationFrame(tick);
+  })(performance.now());
 }
 
 function renderReportLine() {
   const rep = SUMMARY.report;
-  const found = Object.values(rep.columns_found || {}).length;
-  let skipped = (rep.flags_skipped || []).map(f => f.name).join(', ');
-  let s = `Период: ${esc(rep.period_range || '—')} · распознано колонок: ${found}`;
+  const skipped = (rep.flags_skipped || []).map(f => f.name).join(', ');
+  let s = `Период: ${esc(rep.period_range || '—')}`;
   if (skipped) s += ` · пропущены флаги: ${esc(skipped)}`;
   $('report-line').innerHTML = s;
 }

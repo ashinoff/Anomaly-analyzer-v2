@@ -160,3 +160,59 @@ table.reg td { color: var(--text); }
 .err { color: #ffb3bf; background: rgba(90,20,30,.4); border: 1px solid rgba(255,90,114,.4);
     border-radius: 6px; padding: .7rem .9rem; margin: .6rem 0; font-size: .88rem; }
 .spinner { color: var(--text-dim); font-family: var(--mono); font-size: .85rem; padding: 1rem 0; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ДОПОЛНЕНИЯ ПОД КАНВАС «КОСМОС РОССЕТИ» (верхняя панель, логотип-орбита,
+   kicker и уголки hero, живой фон, sweep-мерцание метрик).
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* живой фон (звёзды + электродуги, static/space.js) — за контентом */
+#space { position: fixed; inset: 0; width: 100%; height: 100%;
+    z-index: 0; pointer-events: none; display: block; }
+
+@keyframes ringspin { to { transform: rotate(360deg); } }
+@keyframes sweep { 0% { transform: translateX(-160%); } 100% { transform: translateX(360%); } }
+
+/* ── верхняя панель ── */
+.topbar { display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem; }
+.brand { display: flex; align-items: center; gap: .85rem; }
+.logo { position: relative; width: 38px; height: 38px; flex: none; }
+.logo .ring { position: absolute; inset: 0; border: 1.5px solid rgba(90,162,255,.35);
+    border-radius: 50%; border-top-color: #5aa2ff; animation: ringspin 9s linear infinite; }
+.logo .core { position: absolute; inset: 9px; border-radius: 50%;
+    background: radial-gradient(circle, #7fb4ff, #2e5ba8);
+    box-shadow: 0 0 16px #3f7fe0, 0 0 4px #cfe2ff; animation: glowpulse 2.4s ease-in-out infinite; }
+.brand-name { font-family: var(--head); font-weight: 700; font-size: 1.2rem;
+    letter-spacing: .24em; line-height: 1; color: var(--text); }
+.brand-sub { font-family: var(--mono); font-size: .62rem; letter-spacing: .28em;
+    color: var(--text-faint); margin-top: 4px; }
+.chan { font-family: var(--mono); font-size: .62rem; letter-spacing: .2em;
+    color: var(--text-faint); text-align: right; line-height: 1.9; }
+.chan .live { display: inline-flex; align-items: center; gap: 7px; }
+.chan .dot { width: 7px; height: 7px; border-radius: 50%; background: #2ee6a0;
+    box-shadow: 0 0 8px #2ee6a0; animation: glowpulse 1.4s infinite; }
+
+/* ── hero: kicker + уголковые метки + версия ── */
+.hero-kicker { font-family: var(--mono); font-size: .68rem; letter-spacing: .3em;
+    color: var(--blue); margin-bottom: .7rem; }
+.hero .corner { position: absolute; width: 12px; height: 12px; border-color: #5aa2ff; }
+.hero .corner.tl { top: 8px; left: 8px; border-top: 1.5px solid; border-left: 1.5px solid; }
+.hero .corner.tr { top: 8px; right: 8px; border-top: 1.5px solid; border-right: 1.5px solid; }
+.hero .corner.bl { bottom: 8px; left: 8px; border-bottom: 1.5px solid; border-left: 1.5px solid; }
+.hero .corner.br { bottom: 8px; right: 8px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+.hero-meta .ver { color: var(--blue); }
+
+/* ── sweep-мерцание карточек метрик ── */
+.metric-cell::before {
+    content: ""; position: absolute; top: -40%; left: 0; width: 40%; height: 180%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+    animation: sweep 5s ease-in-out infinite; pointer-events: none;
+}
+.metric-cell:nth-child(2)::before { animation-delay: 1.2s; }
+.metric-cell:nth-child(3)::before { animation-delay: 2.4s; }
+.metric-cell:nth-child(4)::before { animation-delay: 3.6s; }
+
+/* ── сетка параметров: адаптив ── */
+@media (max-width: 720px) { .params-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+@media (max-width: 460px) { .params-grid { grid-template-columns: 1fr !important; } }

@@ -9,18 +9,39 @@
 <link rel="stylesheet" href="/static/ui.css" />
 <!-- Графики. Если CDN недоступен — дашборд работает, не рисуются только чарты. -->
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<script src="/static/space.js" defer></script>
 <script src="/static/app.js" defer></script>
 </head>
 <body>
+<canvas id="space"></canvas>
 <div class="wrap">
+
+  <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo"><span class="ring"></span><span class="core"></span></div>
+      <div>
+        <div class="brand-name">РОССЕТИ</div>
+        <div class="brand-sub">ORBITAL GRID MONITOR</div>
+      </div>
+    </div>
+    <div class="chan">
+      <span class="live"><span class="dot"></span>КАНАЛ АКТИВЕН</span><br/>
+      ДАННЫЕ НЕ СОХРАНЯЮТСЯ
+    </div>
+  </div>
 
   <!-- HERO -->
   <div class="hero">
-    <h1 class="hero-title">Анализ <span class="hero-em">аномального</span> потребления</h1>
+    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div>
+      <div class="hero-kicker">// ГЛУБОКОЕ СКАНИРОВАНИЕ ПОТРЕБЛЕНИЯ</div>
+      <h1 class="hero-title">Анализ <span class="hero-em">аномального</span> потребления</h1>
+    </div>
     <div class="hero-meta">
       <span class="badge">РЕЕСТР АБОНЕНТОВ</span><br/>
       орбита · телеметрия ПУ<br/>
-      Данные не сохраняются
+      <span class="ver">v2.4 — реальное время</span>
     </div>
   </div>
 
@@ -57,9 +78,14 @@
       </aside>
 
       <div class="main">
-        <div class="preview-cols" id="metrics" style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem;"></div>
+        <div class="section-label">Параметры анализа</div>
+        <div class="params-grid" id="params-grid" style="margin-bottom:1.6rem;"></div>
+
+        <div class="section-label">Телеметрия</div>
+        <div class="preview-cols" id="metrics" style="display:flex;gap:1rem;flex-wrap:wrap;margin:.2rem 0 1.1rem;"></div>
 
         <div id="report-line" class="count-line"></div>
+        <div id="pills" style="margin:-.2rem 0 1rem;"></div>
         <button class="btn" id="dl-report">Скачать полный отчёт (Excel)</button>
 
         <div class="tabs">
