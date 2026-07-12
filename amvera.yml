@@ -1,6 +1,6 @@
 # Конфигурация деплоя на Amvera Cloud (https://docs.amvera.ru)
-# Веб-интерфейс (Streamlit). Для API-режима замените command на:
-#   command: uvicorn api:app --host 0.0.0.0 --port 80
+# Веб-приложение на FastAPI (uvicorn). Загрузка файла — чанками, поэтому
+# лимит тела запроса прокси Amvera (HTTP 413) не мешает.
 meta:
   environment: python
   toolchain:
@@ -9,6 +9,6 @@ meta:
 build:
   requirementsPath: requirements.txt
 run:
-  command: streamlit run app.py --server.port 80 --server.address 0.0.0.0 --server.headless true --browser.gatherUsageStats false
+  command: uvicorn main:app --host 0.0.0.0 --port 80
   containerPort: 80
   persistenceMount: /data

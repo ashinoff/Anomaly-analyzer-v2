@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Анализ потребления · РОССЕТИ Космос</title>
+<link rel="stylesheet" href="/assets/app.css" />
+<link rel="stylesheet" href="/static/ui.css" />
+<!-- Графики. Если CDN недоступен — дашборд работает, не рисуются только чарты. -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<script src="/static/app.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1 class="hero-title">Анализ <span class="hero-em">аномального</span> потребления</h1>
+    <div class="hero-meta">
+      <span class="badge">РЕЕСТР АБОНЕНТОВ</span><br/>
+      орбита · телеметрия ПУ<br/>
+      Данные не сохраняются
+    </div>
+  </div>
+
+  <div id="error" class="err" hidden></div>
+
+  <!-- ЗАГРУЗКА (до файла) -->
+  <section id="upload-section">
+    <div id="dropzone" class="dropzone">
+      <div class="glyph"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <div class="big">Перетащите Excel-выгрузку сюда</div>
+      <div class="sub">или нажмите, чтобы выбрать файл · XLSX / XLS · грузится частями, лимит хостинга не мешает</div>
+      <input id="file-input" type="file" accept=".xlsx,.xls" hidden />
+      <div id="progress" class="progress" hidden><i></i></div>
+    </div>
+
+    <div class="section-label" style="margin-top:1.6rem;">Что распознаётся</div>
+    <div class="section-title">Флаги и признаки</div>
+    <div id="legend"></div>
+  </section>
+
+  <!-- ДАШБОРД (после анализа) -->
+  <section id="dashboard" hidden>
+    <div class="filebar">
+      <span class="fname" id="fname">—</span>
+      <span class="fmeta" id="fmeta"></span>
+      <button class="btn ghost small" id="replace-btn" style="margin-left:auto;">Заменить файл</button>
+    </div>
+
+    <div class="layout">
+      <aside class="side">
+        <h2>Настройки</h2>
+        <div class="hint">Двигайте пороги — реестр пересчитается. У каждого правила есть справка&nbsp;ⓘ.</div>
+        <div id="param-groups"></div>
+      </aside>
+
+      <div class="main">
+        <div class="preview-cols" id="metrics" style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem;"></div>
+
+        <div id="report-line" class="count-line"></div>
+        <button class="btn" id="dl-report">Скачать полный отчёт (Excel)</button>
+
+        <div class="tabs">
+          <button class="tab active" data-tab="summary">Сводка</button>
+          <button class="tab" data-tab="registry">Реестр</button>
+          <button class="tab" data-tab="subscriber">Абонент</button>
+        </div>
+
+        <!-- СВОДКА -->
+        <div id="tab-summary" class="tabpanel">
+          <div class="charts">
+            <div>
+              <div class="section-label">Распределение</div>
+              <div class="section-title">По числу флагов</div>
+              <div id="chart-flagcount" class="chart"></div>
+            </div>
+            <div>
+              <div class="section-label">Срабатывание</div>
+              <div class="section-title">Каждого флага</div>
+              <div id="chart-perflag" class="chart"></div>
+            </div>
+          </div>
+          <div class="section-label" style="margin-top:1.4rem;">Сезонная классификация</div>
+          <div class="section-title">По характеру потребления</div>
+          <div id="chart-seasons" class="chart" style="min-height:260px;"></div>
+        </div>
+
+        <!-- РЕЕСТР -->
+        <div id="tab-registry" class="tabpanel" hidden>
+          <div class="section-label">Реестр</div>
+          <div class="section-title">Абоненты с флагами</div>
+          <div class="filters">
+            <div class="f"><label>Мин. флагов</label><input type="number" id="f-minflags" value="1" min="0" max="11" style="width:90px;"></div>
+            <div class="f"><label>Сезонность</label><select id="f-season" style="min-width:180px;"></select></div>
+            <div class="f" style="flex:1;min-width:240px;"><label>Только с этими флагами (И)</label><div id="f-flags" class="flagpick"></div></div>
+          </div>
+          <div class="count-line" id="reg-count"></div>
+          <div class="tablewrap"><table class="reg" id="reg-table"></table></div>
+          <div style="margin-top:.9rem;"><button class="btn ghost small" id="dl-selection">Скачать текущую выборку</button></div>
+        </div>
+
+        <!-- АБОНЕНТ -->
+        <div id="tab-subscriber" class="tabpanel" hidden>
+          <div class="section-label">Детальный просмотр</div>
+          <div class="section-title">График и метрики абонента</div>
+          <select id="sub-select" style="max-width:640px;"></select>
+          <div id="sub-body" style="margin-top:1rem;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer-strip">
+    Прототип · Данные не сохраняются · Работает в браузере · РОССЕТИ ORBITAL
+  </div>
+</div>
+</body>
+</html>
