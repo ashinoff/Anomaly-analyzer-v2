@@ -1,208 +1,281 @@
 /* ------------------------------------------------------------------
-   Собственный CSS ТОЛЬКО для блоков, которые мы рендерим сами
-   (наши классы). Виджеты Streamlit оформляются штатной темой из
-   .streamlit/config.toml — здесь их не трогаем, чтобы не зависеть от
-   внутренней разметки Streamlit. Шрифты — системные (без CDN).
+   «Космос РОССЕТИ» — тёмная орбитальная тема.
+   Стилизуем ТОЛЬКО свои блоки (наши классы) + фон приложения (.stApp).
+   Виджеты Streamlit — штатной тёмной темой из .streamlit/config.toml.
+   Шрифты грузятся с CDN, но в каждом стеке есть системный фолбэк —
+   если CDN недоступен, вёрстка не ломается, меняется только начертание.
    ------------------------------------------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 :root {
-    --navy:        #1F3868;   /* основной корпоративный */
-    --blue:        #2E5BA8;
-    --red:         #C8102E;   /* только тонкий акцент */
-    --orange:      #E37222;
-    --green:       #0E8A6E;
-    --bg-soft:     #F4F6FA;
-    --bg:          #FFFFFF;
-    --border:      #E1E5EB;
-    --text:        #1A1F2C;
-    --text-dim:    #5A6478;
-    --text-faint:  #98A0AE;
-    --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-    --mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+    /* палитра космоса */
+    --accent:      #5AA2FF;   /* основной синий */
+    --accent-hi:   #7FB4FF;   /* яркий синий */
+    --accent-soft: #8FC0FF;
+    --red:         #FF5A72;   /* тревожный акцент */
+    --red-deep:    #C8102E;
+    --orange:      #FFB066;
+    --green:       #2EE6A0;
+    --purple:      #B58CFF;
+
+    /* смысловые роли, на которые ссылаются инлайновые стили в app.py */
+    --navy:        #7FB4FF;   /* «основной» в тёмной теме = яркий синий */
+    --blue:        #7FB4FF;
+    --text:        #E8EEF8;
+    --text-dim:    #9FB2D8;
+    --text-faint:  #6F83AC;
+    --border:      rgba(90, 162, 255, 0.24);
+    --bg:          #0A1230;
+    --bg-soft:     rgba(20, 34, 72, 0.34);   /* стекло карточек */
+    --bg-card:     rgba(18, 30, 64, 0.30);
+
+    --glass-border: 1px solid rgba(90, 162, 255, 0.22);
+    --glow:        0 6px 22px rgba(0, 0, 0, 0.45), 0 0 16px rgba(90, 162, 255, 0.16);
+
+    --font-head: 'Barlow Condensed', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
 }
 
-.mono { font-family: var(--mono); }
+/* ── ФОН ПРИЛОЖЕНИЯ: космос-градиент + сетка + редкие звёзды ── */
+.stApp {
+    background:
+        linear-gradient(rgba(90,162,255,.05) 1px, transparent 1px) 0 0 / 64px 64px,
+        linear-gradient(90deg, rgba(90,162,255,.05) 1px, transparent 1px) 0 0 / 64px 64px,
+        radial-gradient(1.5px 1.5px at 12% 22%, rgba(200,222,255,.55), transparent),
+        radial-gradient(1.5px 1.5px at 68% 14%, rgba(200,222,255,.45), transparent),
+        radial-gradient(1.5px 1.5px at 84% 38%, rgba(200,222,255,.5),  transparent),
+        radial-gradient(1.5px 1.5px at 33% 54%, rgba(200,222,255,.4),  transparent),
+        radial-gradient(1.5px 1.5px at 52% 78%, rgba(200,222,255,.45), transparent),
+        radial-gradient(1.5px 1.5px at 90% 82%, rgba(200,222,255,.4),  transparent),
+        radial-gradient(1.5px 1.5px at 8% 88%,  rgba(200,222,255,.4),  transparent),
+        radial-gradient(120% 90% at 78% -10%, #16264F 0%, #0A1230 34%, #05070F 72%) fixed;
+}
 
-/* ========= HERO ========= */
+.mono { font-family: var(--font-mono); }
+
+/* ── HERO ── */
 .hero {
-    background: var(--navy);
-    border-bottom: 3px solid var(--red);
-    color: #FFFFFF;
-    padding: 1.7rem 2rem;
+    position: relative;
+    padding: 1.9rem 2.4rem;
     margin: 0 0 1.6rem 0;
-    border-radius: 4px 4px 0 0;
+    border: var(--glass-border);
+    border-radius: 6px;
+    background:
+        linear-gradient(90deg, var(--red-deep), var(--red), transparent) 0 0 / 34% 3px no-repeat,
+        var(--bg-soft);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--glow);
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    gap: 1.5rem;
+    align-items: flex-end;
+    gap: 1.8rem;
     flex-wrap: wrap;
+    overflow: hidden;
 }
-.hero, .hero * { font-family: var(--font); color: #FFFFFF; }
+/* уголковые метки (blueprint) */
+.hero::before, .hero::after {
+    content: ""; position: absolute; width: 13px; height: 13px;
+    border-color: var(--accent); pointer-events: none;
+}
+.hero::before { top: 9px; left: 9px; border-top: 1.5px solid; border-left: 1.5px solid; }
+.hero::after { bottom: 9px; right: 9px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+
 .hero-title {
-    font-weight: 700;
-    font-size: 2rem;
-    line-height: 1.12;
-    letter-spacing: -0.01em;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: clamp(1.15rem, 2.3vw, 1.85rem);
+    line-height: 1.18;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
     margin: 0;
+    color: #DCE6F7;
+    text-shadow: 0 0 26px rgba(90, 162, 255, 0.3);
 }
 .hero-em {
-    font-weight: 400;
-    border-bottom: 3px solid var(--red);
-    padding-bottom: 1px;
+    color: var(--accent-soft);
+    background: linear-gradient(90deg, var(--red-deep), var(--red)) 0 100% / 100% 2px no-repeat;
+    padding-bottom: 3px;
+    filter: drop-shadow(0 0 6px rgba(255, 45, 77, 0.7));
 }
 .hero-meta {
-    font-family: var(--mono);
+    font-family: var(--font-mono);
     font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.82);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
     text-align: right;
-    line-height: 1.75;
+    line-height: 1.85;
+    text-transform: uppercase;
     white-space: nowrap;
 }
 .hero-meta .badge {
     display: inline-block;
     color: #FFFFFF;
     font-weight: 600;
-    border-left: 3px solid var(--red);
-    padding-left: 8px;
+    letter-spacing: 0.14em;
+    border-left: 3px solid var(--red-deep);
+    padding-left: 9px;
     margin-bottom: 4px;
 }
 
-/* ========= КАРТОЧКИ МЕТРИК (в st.columns) ========= */
+/* ── КАРТОЧКИ МЕТРИК (в st.columns) ── */
 .metric-cell {
-    padding: 1.1rem 1.2rem;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-top: 3px solid var(--cell-accent, var(--navy));
-    border-radius: 4px;
+    position: relative;
+    padding: 1.2rem 1.3rem 1.4rem;
+    border: var(--glass-border);
+    border-radius: 6px;
+    border-top: 2px solid var(--cell-accent, var(--accent));
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--glow);
     height: 100%;
+    overflow: hidden;
 }
 .metric-label {
-    font-family: var(--mono);
+    font-family: var(--font-mono);
     font-size: 0.62rem;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--text-dim);
-    margin-bottom: 0.55rem;
+    color: #8EA3CC;
+    margin-bottom: 0.7rem;
     font-weight: 600;
 }
 .metric-value {
-    font-family: var(--mono);
+    font-family: var(--font-head);
     font-weight: 700;
-    font-size: 1.9rem;
-    line-height: 1.1;
+    font-size: 2.5rem;
+    line-height: 1;
     color: var(--navy);
+    text-shadow: 0 0 22px rgba(90, 162, 255, 0.45);
     word-break: break-word;
 }
-.metric-value.red { color: var(--red); }
+.metric-value.red { color: var(--red); text-shadow: 0 0 22px rgba(255, 45, 77, 0.5); }
+.metric-value.orange { color: var(--orange); text-shadow: 0 0 22px rgba(255, 176, 102, 0.5); }
 
-/* ========= СЕКЦИОННЫЕ ЗАГОЛОВКИ ========= */
+/* ── СЕКЦИОННЫЕ ЗАГОЛОВКИ ── */
 .section-label {
-    font-family: var(--mono);
-    font-size: 0.65rem;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
-    letter-spacing: 0.16em;
-    color: var(--text-dim);
-    margin: 1.5rem 0 0.3rem 0;
-    font-weight: 600;
+    color: var(--accent);
+    margin: 1.6rem 0 0.35rem 0;
+    font-weight: 500;
 }
 .section-title {
-    font-family: var(--font);
+    font-family: var(--font-head);
     font-weight: 700;
-    font-size: 1.25rem;
-    line-height: 1.2;
-    color: var(--navy);
-    margin: 0.1rem 0 1rem 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--navy);
+    font-size: 1.5rem;
+    line-height: 1.1;
+    color: var(--text);
+    margin: 0.1rem 0 1.1rem 0;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(90, 162, 255, 0.28);
 }
 
-/* ========= ФЛАГИ ========= */
+/* ── ФЛАГИ ── */
 .flag-row {
     display: flex;
     align-items: center;
-    gap: 0.7rem;
-    padding: 0.6rem 0.9rem;
-    margin-bottom: 0.4rem;
+    gap: 0.75rem;
+    padding: 0.7rem 0.95rem;
+    margin-bottom: 0.55rem;
+    border: 1px solid rgba(90, 162, 255, 0.4);
+    border-radius: 6px;
     background: var(--bg-soft);
-    border-left: 3px solid var(--flag-color, var(--navy));
-    border-radius: 0 4px 4px 0;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--glow);
 }
 .flag-row .icon {
-    color: var(--flag-color, var(--navy));
+    color: var(--flag-color, var(--accent-hi));
     display: inline-flex;
     align-items: center;
+    filter: drop-shadow(0 0 6px var(--flag-color, var(--accent-hi)));
 }
 .flag-row .name {
-    font-family: var(--font);
+    font-family: var(--font-body);
     font-weight: 500;
-    color: var(--text);
-    font-size: 0.92rem;
+    color: #DBE6F7;
+    font-size: 0.95rem;
 }
+.flag-row .name b { color: #FFFFFF; }
 .flag-empty {
-    padding: 0.7rem 1rem;
-    color: var(--navy);
-    background: var(--bg-soft);
-    border-left: 3px solid var(--navy);
-    font-weight: 500;
-    font-family: var(--font);
-    border-radius: 0 4px 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid rgba(46, 230, 160, 0.4);
+    border-radius: 6px;
+    background: rgba(16, 44, 38, 0.32);
+    backdrop-filter: blur(10px);
+    color: #8FF0CF;
+    font-weight: 600;
+    font-family: var(--font-body);
 }
 
-/* ========= KEY-VALUE ========= */
-.kv-list { font-family: var(--font); }
+/* ── KEY-VALUE ── */
+.kv-list {
+    font-family: var(--font-body);
+    border: var(--glass-border);
+    border-radius: 6px;
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
+    padding: 0.2rem 1.1rem;
+}
 .kv-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border);
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(90, 162, 255, 0.12);
     gap: 1rem;
 }
 .kv-row:last-child { border-bottom: none; }
-.kv-key { color: var(--text-dim); font-size: 0.85rem; }
+.kv-key { color: var(--text-dim); font-size: 0.86rem; }
 .kv-val {
-    font-family: var(--mono);
-    font-size: 0.9rem;
-    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    color: #DBE6F7;
     text-align: right;
     font-weight: 600;
+    text-shadow: 0 0 10px rgba(90, 162, 255, 0.4);
     word-break: break-word;
 }
 
-/* ========= PILL ========= */
+/* ── PILL ── */
 .pill {
     display: inline-block;
-    padding: 0.2rem 0.6rem;
+    padding: 0.28rem 0.7rem;
     border-radius: 4px;
-    font-family: var(--mono);
+    font-family: var(--font-mono);
     font-size: 0.72rem;
-    margin: 0.15rem 0.2rem 0.15rem 0;
-    border: 1px solid var(--border);
-    background: var(--bg-soft);
-    color: var(--text);
+    margin: 0.16rem 0.22rem 0.16rem 0;
+    border: 1px solid rgba(90, 162, 255, 0.15);
+    background: rgba(20, 30, 60, 0.4);
+    color: var(--text-faint);
 }
 .pill.found {
-    color: var(--navy);
-    border-color: #C7D2E4;
-    background: #EEF2F8;
+    color: #BCD6FF;
+    border-color: rgba(90, 162, 255, 0.4);
+    background: rgba(46, 91, 168, 0.28);
 }
 
-/* ========= ЗАГЛУШКА ========= */
+/* ── ЗАГЛУШКА ── */
 .empty-state {
-    border: 1px dashed var(--border);
-    padding: 2.4rem 2rem;
+    border: 1px dashed rgba(90, 162, 255, 0.3);
+    border-radius: 6px;
+    padding: 2.6rem 2rem;
     text-align: center;
     color: var(--text-dim);
-    font-family: var(--font);
-    font-size: 1.1rem;
+    font-family: var(--font-body);
+    font-size: 1.15rem;
     font-weight: 500;
     margin: 1rem 0;
-    background: var(--bg-soft);
-    border-radius: 4px;
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
 }
 .empty-state .small {
-    font-family: var(--mono);
+    font-family: var(--font-mono);
     font-size: 0.78rem;
     color: var(--text-faint);
     letter-spacing: 0.03em;
@@ -211,15 +284,15 @@
     font-weight: 400;
 }
 
-/* ========= ПОДВАЛ ========= */
+/* ── ПОДВАЛ ── */
 .footer-strip {
-    margin-top: 2.5rem;
+    margin-top: 2.8rem;
     padding: 1rem 0;
-    border-top: 2px solid var(--navy);
-    font-family: var(--mono);
-    font-size: 0.68rem;
-    color: var(--text-dim);
+    border-top: 1px solid rgba(90, 162, 255, 0.25);
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    color: var(--text-faint);
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.18em;
     text-align: center;
 }

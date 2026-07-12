@@ -1,13 +1,14 @@
 # Настройки Streamlit. Файл читается автоматически из папки .streamlit/
 
 [theme]
-# Тема служебных элементов (выпадающие списки, меню, dataframe) —
-# приведена к светлому корпоративному стилю приложения
-base = "light"
-primaryColor = "#1F3868"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F4F6FA"
-textColor = "#1A1F2C"
+# Тёмная «космос»-тема: виджеты (слайдеры, вкладки, dataframe, загрузчик)
+# берут цвета отсюда, наши блоки — из assets/app.css. Фон приложения над
+# backgroundColor дорисовывается CSS'ом (звёздный градиент + сетка).
+base = "dark"
+primaryColor = "#5AA2FF"
+backgroundColor = "#05070F"
+secondaryBackgroundColor = "#101D3C"
+textColor = "#E8EEF8"
 font = "sans serif"
 
 [server]

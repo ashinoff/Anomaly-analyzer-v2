@@ -81,17 +81,17 @@ FLAG_TITLES = {
 }
 
 FLAG_COLOR = {
-    'подозрение_хищение':   '#C8102E',  # красный (Россети)
-    'долгое_молчание':      '#5A6F8E',  # серо-синий
-    'превышение_мощности':  '#E37222',  # оранжевый
-    'нестабильность':       '#0E8A6E',  # бирюзово-зелёный
-    'одинаковые_подряд':    '#7B5BA6',  # фиолетовый
-    'аномалия_в_когорте':   '#1F3868',  # navy
-    'тренд_снижение':       '#8C3A2B',  # кирпичный
-    'падение_год_к_году':   '#B0413E',  # тёмно-красный
-    'нулевые_показания':    '#4A4E69',  # графит
-    'круглые_числа':        '#946B2D',  # охра
-    'ml_аномалия':          '#2F6F4F',  # тёмно-зелёный
+    'подозрение_хищение':   '#FF5A72',  # тревожный красный
+    'долгое_молчание':      '#7FB4FF',  # синий
+    'превышение_мощности':  '#FFB066',  # оранжевый
+    'нестабильность':       '#2EE6A0',  # зелёный
+    'одинаковые_подряд':    '#B58CFF',  # фиолетовый
+    'аномалия_в_когорте':   '#5AA2FF',  # синий-акцент
+    'тренд_снижение':       '#FF8A5A',  # тёпло-оранжевый
+    'падение_год_к_году':   '#FF7A86',  # розово-красный
+    'нулевые_показания':    '#9FB2D8',  # серо-синий
+    'круглые_числа':        '#FFCA8F',  # песочный
+    'ml_аномалия':          '#8FF0CF',  # мятный
 }
 
 # =====================================================================
@@ -110,23 +110,23 @@ st.markdown(f"<style>{_CSS}</style>", unsafe_allow_html=True)
 # =====================================================================
 PLOTLY_LAYOUT = dict(
     paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(244, 246, 250, 0.4)',
-    font=dict(family='system-ui, sans-serif', color='#5A6478', size=11),
-    xaxis=dict(gridcolor='#EEF1F5', linecolor='#E1E5EB', zerolinecolor='#E1E5EB',
-               tickfont=dict(color='#5A6478', family='ui-monospace, monospace')),
-    yaxis=dict(gridcolor='#EEF1F5', linecolor='#E1E5EB', zerolinecolor='#E1E5EB',
-               tickfont=dict(color='#5A6478', family='ui-monospace, monospace')),
+    plot_bgcolor='rgba(20, 34, 72, 0.18)',
+    font=dict(family='system-ui, sans-serif', color='#9FB2D8', size=11),
+    xaxis=dict(gridcolor='rgba(90,162,255,0.12)', linecolor='rgba(90,162,255,0.28)', zerolinecolor='rgba(90,162,255,0.2)',
+               tickfont=dict(color='#9FB2D8', family='ui-monospace, monospace')),
+    yaxis=dict(gridcolor='rgba(90,162,255,0.12)', linecolor='rgba(90,162,255,0.28)', zerolinecolor='rgba(90,162,255,0.2)',
+               tickfont=dict(color='#9FB2D8', family='ui-monospace, monospace')),
     margin=dict(l=10, r=10, t=20, b=10),
     showlegend=False,
 )
 
-NAVY = '#1F3868'
-BLUE = '#2E5BA8'
-RED = '#C8102E'
-ORANGE = '#E37222'
-GREEN = '#0E8A6E'
-PURPLE = '#7B5BA6'
-GRAY = '#98A0AE'
+NAVY = '#5AA2FF'
+BLUE = '#7FB4FF'
+RED = '#FF5A72'
+ORANGE = '#FFB066'
+GREEN = '#2EE6A0'
+PURPLE = '#B58CFF'
+GRAY = '#6F83AC'
 
 # =====================================================================
 # САЙДБАР
@@ -388,7 +388,7 @@ n_high_risk = int((registry['риск_балл'] >= 5).sum())
 _metric_cards = [
     ("Абонентов в файле", f"{report['total_rows']:,}", "navy", ""),
     ("Месяцев данных", f"{report['months_detected']}", "navy", ""),
-    ("С флагами", f"{n_with_flags:,}", "navy", ""),
+    ("С флагами", f"{n_with_flags:,}", "orange", "orange"),
     ("Высокий риск (балл ≥ 5)", f"{n_high_risk:,}", "red", "red"),
 ]
 for _col, (_lbl, _val, _accent, _vcls) in zip(st.columns(4), _metric_cards):
@@ -443,7 +443,7 @@ with tab_summary:
             x=flag_counts.index.astype(int).astype(str), y=flag_counts.values,
             text=flag_counts.values, textposition='outside',
             marker=dict(color=colors),
-            textfont=dict(family='ui-monospace, monospace', color='#1A1F2C', size=12),
+            textfont=dict(family='ui-monospace, monospace', color='#DBE6F7', size=12),
             hovertemplate='<b>%{x} флагов</b><br>%{y} абонентов<extra></extra>',
         ))
         fig.update_layout(**PLOTLY_LAYOUT, height=320,
@@ -465,7 +465,7 @@ with tab_summary:
             textposition='outside',
             orientation='h',
             marker=dict(color=[c for _, _, c in flag_data]),
-            textfont=dict(family='ui-monospace, monospace', color='#1A1F2C', size=12),
+            textfont=dict(family='ui-monospace, monospace', color='#DBE6F7', size=12),
             hovertemplate='<b>%{y}</b><br>%{x} абонентов<extra></extra>',
         ))
         fig2.update_layout(**PLOTLY_LAYOUT, height=320,
@@ -480,7 +480,7 @@ with tab_summary:
     fig3 = go.Figure(go.Bar(
         x=seas.index, y=seas.values, text=seas.values, textposition='outside',
         marker_color=[season_color.get(k, GRAY) for k in seas.index],
-        textfont=dict(family='ui-monospace, monospace', color='#1A1F2C', size=12),
+        textfont=dict(family='ui-monospace, monospace', color='#DBE6F7', size=12),
         hovertemplate='<b>%{x}</b><br>%{y} абонентов<extra></extra>',
     ))
     fig3.update_layout(**PLOTLY_LAYOUT, height=280,
@@ -572,7 +572,7 @@ with tab_detail:
             marker=dict(size=5, color=NAVY, line=dict(color='#FFFFFF', width=1)),
             connectgaps=False,
             fill='tozeroy',
-            fillcolor='rgba(31, 56, 104, 0.08)',
+            fillcolor='rgba(90, 162, 255, 0.14)',
             hovertemplate='<b>%{x|%b %Y}</b><br>%{y:,.0f} кВт·ч<extra></extra>',
         ))
         fig.update_layout(**PLOTLY_LAYOUT, height=400,

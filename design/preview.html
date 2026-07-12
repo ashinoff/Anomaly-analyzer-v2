@@ -15,17 +15,18 @@
    Здесь имитируется то, что в Streamlit даёт сама страница/тема:
    белый фон, отступы контейнера и раскладка st.columns(4).
    Эти правила НЕ трогаем как «дизайн» — они лишь хостят превью.      */
-body { margin: 0; background: #FFFFFF; color: #1A1F2C;
-       font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
+body { margin: 0; color: #E8EEF8;
+       background: radial-gradient(120% 90% at 78% -10%, #16264F 0%, #0A1230 34%, #05070F 72%) fixed;
+       font-family: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
 .preview-wrap { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1.2rem 4rem; }
-.preview-note { background: #F4F6FA; border: 1px solid #E1E5EB; border-radius: 4px;
-                padding: 0.9rem 1.1rem; font-size: 0.85rem; color: #5A6478; margin-bottom: 1.4rem; }
-.preview-note b { color: #1F3868; }
+.preview-note { background: rgba(18,30,64,0.4); border: 1px solid rgba(90,162,255,0.22); border-radius: 6px;
+                padding: 0.9rem 1.1rem; font-size: 0.85rem; color: #9FB2D8; margin-bottom: 1.4rem; }
+.preview-note b { color: #7FB4FF; }
 .preview-note code { font-family: ui-monospace, monospace; font-size: 0.82em; }
 .preview-cols { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
 .preview-cols > * { flex: 1 1 180px; }        /* имитация st.columns(4) */
 .preview-h { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.14em;
-             color: #98A0AE; font-family: ui-monospace, monospace; margin: 2.2rem 0 0.6rem; }
+             color: #6F83AC; font-family: ui-monospace, monospace; margin: 2.2rem 0 0.6rem; }
 </style>
 </head>
 
