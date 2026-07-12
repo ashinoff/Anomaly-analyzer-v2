@@ -298,6 +298,11 @@ app.mount("/assets", StaticFiles(directory=str(BASE / "assets")), name="assets")
 app.mount("/static", StaticFiles(directory=str(BASE / "static")), name="static")
 
 
+@app.get("/favicon.ico")
+def favicon():
+    return FileResponse(str(BASE / "static" / "favicon.svg"), media_type="image/svg+xml")
+
+
 @app.get("/")
 def index():
     return FileResponse(str(BASE / "static" / "index.html"))
