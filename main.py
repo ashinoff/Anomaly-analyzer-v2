@@ -107,11 +107,11 @@ def _summary_payload(res: dict) -> dict:
     seasons = [{"name": str(k), "color": M.SEASON_COLOR.get(k, "#6F83AC"),
                 "count": int(v)} for k, v in sc.items()]
 
-    # реестр целиком (для таблицы, фильтров и селектора абонента на клиенте)
-    reg2 = registry.copy()
-    reg2.insert(0, "_idx", registry.index)
-    rows = json.loads(reg2.to_json(orient="records", force_ascii=False, date_format="iso"))
-    columns = [c for c in reg2.columns]
+    # Реестр НЕ отдаём целиком — только мета (колонки/подписи). Сами строки
+    # тянутся порциями через /api/registry, список абонентов — /api/subscribers.
+    # Иначе на большом файле сериализация всего реестра на каждый анализ упирается
+    # в память/таймаут прокси Amvera (HTTP 503).
+    columns = ["_idx"] + list(registry.columns)
     labels = {c: _label_for(c) for c in columns}
 
     return {
@@ -131,8 +131,24 @@ def _summary_payload(res: dict) -> dict:
         },
         "charts": {"by_flag_count": by_flag_count, "per_flag": per_flag, "seasons": seasons},
         "flag_cols": list(flags.columns),
-        "registry": {"columns": columns, "labels": labels, "rows": rows},
+        "columns": columns,
+        "labels": labels,
+        "registry_total": int(len(registry)),
     }
+
+
+def _filter_registry(registry, flags, payload):
+    view = registry
+    mf = int(payload.get("min_flags", 0) or 0)
+    if mf:
+        view = view[view["кол-во_флагов"] >= mf]
+    season = payload.get("season")
+    if season and season != "(все)":
+        view = view[view["сезонность"] == season]
+    for f in (payload.get("flags") or []):
+        if f in flags.columns:
+            view = view[view[f] == True]
+    return view
 
 
 # ── Метаданные интерфейса ──────────────────────────────────────────────────
@@ -276,15 +292,53 @@ def subscriber_card(file_id: str, idx: int):
 
 
 # ── Скачивание: текущая выборка реестра ────────────────────────────────────
+@app.post("/api/registry")
+def registry_list(payload: dict):
+    """Строки реестра порциями с фильтрами (серверная фильтрация, лимит строк)."""
+    res = _RESULTS.get(payload.get("file_id"))
+    if not res:
+        raise HTTPException(404, "Сначала выполните анализ")
+    registry, flags = res["registry"], res["flags"]
+    view = _filter_registry(registry, flags, payload)
+    total = int(len(view))
+    limit = int(payload.get("limit", 2000))
+    head = view.head(limit).copy()
+    head.insert(0, "_idx", head.index)
+    rows = json.loads(head.to_json(orient="records", force_ascii=False, date_format="iso"))
+    return {"rows": rows, "shown": len(rows), "total": total,
+            "registry_total": int(len(registry))}
+
+
+@app.get("/api/subscribers/{file_id}")
+def subscribers_list(file_id: str, limit: int = 2000):
+    """Компактный список абонентов для селектора (idx + подпись), топ по риску."""
+    res = _RESULTS.get(file_id)
+    if not res:
+        raise HTTPException(404, "Сначала выполните анализ")
+    registry = res["registry"]
+    order = registry.sort_values(["риск_балл", "кол-во_флагов"], ascending=False)
+    total = int(len(order))
+    parts_cols = ['Заводской номер прибора учета', 'Наименование точки учета',
+                  'Населенный пункт', 'Улица', 'Дом']
+    items = []
+    for idx, r in order.head(limit).iterrows():
+        parts = [str(r[c]) for c in parts_cols if c in registry.columns and pd.notna(r[c])]
+        n = int(r.get('кол-во_флагов', 0) or 0)
+        label = f"#{idx} · {' · '.join(parts) if parts else 'без идентификатора'}"
+        if n:
+            label += f"  ·  флагов: {n}"
+        items.append({"idx": int(idx), "label": label})
+    return {"items": items, "shown": len(items), "total": total}
+
+
 @app.post("/api/registry/export")
 def registry_export(payload: dict):
     file_id = payload.get("file_id")
-    indices = payload.get("indices")
     res = _RESULTS.get(file_id)
     if not res:
         raise HTTPException(404, "Сначала выполните анализ")
     registry, flags = res["registry"], res["flags"]
-    view = registry if indices is None else registry.loc[[i for i in indices if i in registry.index]]
+    view = _filter_registry(registry, flags, payload)  # выгружаем ВСЮ выборку (без лимита)
     display_view = view.rename(columns={
         **M.METRIC_LABELS,
         **{k: M.FLAG_TITLES.get(k, k) for k in flags.columns},

@@ -297,25 +297,31 @@ function buildFlagFilter() {
   $('f-flags').querySelectorAll('input').forEach(i => i.addEventListener('change', renderRegistry));
 }
 
-function filteredRows() {
-  const minF = parseInt($('f-minflags').value) || 0;
-  const season = $('f-season').value;
-  const activeFlags = [...$('f-flags').querySelectorAll('input:checked')].map(i => i.value);
-  return SUMMARY.registry.rows.filter(row => {
-    if ((row['кол-во_флагов'] || 0) < minF) return false;
-    if (season && season !== '(все)' && row['сезонность'] !== season) return false;
-    for (const f of activeFlags) if (!row[f]) return false;
-    return true;
-  });
+function currentFilters() {
+  return {
+    file_id: FILE_ID,
+    min_flags: parseInt($('f-minflags').value) || 0,
+    season: $('f-season').value,
+    flags: [...$('f-flags').querySelectorAll('input:checked')].map(i => i.value),
+  };
 }
 
-function renderRegistry() {
-  const rows = filteredRows();
-  const cols = SUMMARY.registry.columns.filter(c => c !== '_idx');
-  const labels = SUMMARY.registry.labels;
+// Таблица реестра тянется порциями с сервера (серверная фильтрация) — на клиент
+// не грузим весь реестр, поэтому анализ большого файла не упирается в память/таймаут.
+async function renderRegistry() {
+  if (!FILE_ID) return;
+  let d;
+  try {
+    d = await (await fetch('/api/registry', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...currentFilters(), limit: 2000 }),
+    })).json();
+  } catch (e) { return; }
+  const cols = SUMMARY.columns.filter(c => c !== '_idx');
+  const labels = SUMMARY.labels;
   const flagset = new Set(SUMMARY.flag_cols);
   const head = '<thead><tr>' + cols.map(c => `<th>${esc(labels[c] || c)}</th>`).join('') + '</tr></thead>';
-  const body = '<tbody>' + rows.slice(0, 1000).map(r => '<tr>' + cols.map(c => {
+  const body = '<tbody>' + d.rows.map(r => '<tr>' + cols.map(c => {
     let v = r[c];
     if (flagset.has(c)) v = v ? '✓' : '·';
     else if (typeof v === 'number') v = fmtNum(v);
@@ -323,17 +329,15 @@ function renderRegistry() {
     return `<td>${esc(v)}</td>`;
   }).join('') + '</tr>').join('') + '</tbody>';
   $('reg-table').innerHTML = head + body;
-  const total = SUMMARY.registry.rows.length;
-  $('reg-count').innerHTML = `Показано <b>${rows.length.toLocaleString('ru-RU')}</b> из ${total.toLocaleString('ru-RU')} абонентов`
-    + (rows.length > 1000 ? ' · в таблице первые 1000, в Excel — все' : '');
+  $('reg-count').innerHTML = `Показано <b>${d.total.toLocaleString('ru-RU')}</b> из ${d.registry_total.toLocaleString('ru-RU')} абонентов`
+    + (d.shown < d.total ? ` · в таблице первые ${d.shown.toLocaleString('ru-RU')}, в Excel — вся выборка` : '');
 }
 
 async function exportSelection() {
   if (!FILE_ID) return;
-  const indices = filteredRows().map(r => r['_idx']);
   const r = await fetch('/api/registry/export', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ file_id: FILE_ID, indices }),
+    body: JSON.stringify(currentFilters()),
   });
   if (!r.ok) { showError('Ошибка выгрузки выборки'); return; }
   const blob = await r.blob();
@@ -343,17 +347,13 @@ async function exportSelection() {
 }
 
 // ── абонент ─────────────────────────────────────────────────────────────
-function subLabel(row) {
-  const parts = [];
-  ['Заводской номер прибора учета', 'Наименование точки учета', 'Населенный пункт', 'Улица', 'Дом']
-    .forEach(c => { if (row[c] !== null && row[c] !== undefined && row[c] !== '') parts.push(row[c]); });
-  const n = row['кол-во_флагов'] || 0;
-  return `#${row['_idx']} · ${parts.length ? parts.join(' · ') : 'без идентификатора'}${n ? '  ·  флагов: ' + n : ''}`;
-}
-function buildSubscriberSelect() {
-  const rows = [...SUMMARY.registry.rows].sort((a, b) =>
-    (b['риск_балл'] || 0) - (a['риск_балл'] || 0) || (b['кол-во_флагов'] || 0) - (a['кол-во_флагов'] || 0));
-  $('sub-select').innerHTML = rows.map(r => `<option value="${r['_idx']}">${esc(subLabel(r))}</option>`).join('');
+// Список абонентов для селектора — компактный, с сервера (топ по риску).
+async function buildSubscriberSelect() {
+  if (!FILE_ID) return;
+  let d;
+  try { d = await (await fetch(`/api/subscribers/${FILE_ID}`)).json(); }
+  catch (e) { return; }
+  $('sub-select').innerHTML = d.items.map(it => `<option value="${it.idx}">${esc(it.label)}</option>`).join('');
   $('sub-select').onchange = onSubscriberChange;
 }
 
