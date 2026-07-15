@@ -158,17 +158,47 @@ async function uploadFile(file) {
 }
 
 // ── анализ ──────────────────────────────────────────────────────────────
+let ANALYZE_SEQ = 0;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function setAnalyzing(on) {
+  let el = $('analyzing-pill');
+  if (on) {
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'analyzing-pill';
+      el.textContent = 'Анализ выполняется…';
+      el.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:9999;background:var(--panel-soft,rgba(20,34,72,.9));border:1px solid var(--border,rgba(90,162,255,.4));color:#e8eef8;padding:.5rem .9rem;border-radius:6px;font-family:ui-monospace,monospace;font-size:.8rem;box-shadow:0 6px 20px rgba(0,0,0,.5)';
+      document.body.appendChild(el);
+    }
+    if (!SUMMARY) $('metrics').innerHTML = '<div class="spinner" style="padding:1rem">Анализ выполняется…</div>';
+  } else if (el) {
+    el.remove();
+  }
+}
+
+// Запуск анализа в фоне + опрос статуса (большой файл дольше таймаута прокси).
 async function runAnalyze(first) {
   if (!FILE_ID) return;
   clearError();
+  const seq = ++ANALYZE_SEQ;
+  setAnalyzing(true);
+  let result;
   try {
     const r = await fetch('/api/analyze', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ file_id: FILE_ID, params: PARAMS }),
     });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || ('HTTP ' + r.status));
-    SUMMARY = await r.json();
-  } catch (e) { showError('Ошибка анализа: ' + e.message); return; }
+    const { job_id } = await r.json();
+    result = await pollAnalyze(job_id, seq);
+  } catch (e) {
+    if (seq === ANALYZE_SEQ) { setAnalyzing(false); if (e.message !== 'superseded') showError('Ошибка анализа: ' + e.message); }
+    return;
+  }
+  if (seq !== ANALYZE_SEQ) return;  // пока считали — стартовал новый анализ
+  SUMMARY = result;
+  setAnalyzing(false);
 
   if (first) {
     buildSeasonFilter();
@@ -182,6 +212,19 @@ async function runAnalyze(first) {
   renderSummaryCharts();
   renderRegistry();
   if (SUMMARY && document.querySelector('.tab.active').dataset.tab === 'subscriber') onSubscriberChange();
+}
+
+async function pollAnalyze(job_id, seq) {
+  for (let i = 0; i < 600; i++) {          // ждём до ~10 минут
+    await sleep(1000);
+    if (seq !== ANALYZE_SEQ) throw new Error('superseded');
+    const r = await fetch(`/api/analyze/status/${job_id}`);
+    if (r.status === 400 || r.status === 404) throw new Error((await r.json().catch(() => ({}))).detail || 'ошибка анализа');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (j.status === 'done') return j;
+  }
+  throw new Error('анализ слишком долгий — уменьшите файл');
 }
 
 // SVG-иконки для сетки параметров (как в канвасе).

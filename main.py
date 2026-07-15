@@ -12,7 +12,9 @@ FastAPI-приложение: анализ аномального потребл
 """
 import io
 import json
+import uuid
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import quote
 
 import numpy as np
@@ -39,6 +41,18 @@ _UPLOADS: "OrderedDict[str, dict]" = OrderedDict()
 _FILES: "OrderedDict[str, pd.DataFrame]" = OrderedDict()
 _RESULTS: "OrderedDict[str, dict]" = OrderedDict()
 _MAX_KEEP = 2  # держим мало сессий в RAM — контейнер Amvera небольшой
+
+# Фоновые задачи анализа: большой файл (десятки месяцев × тысячи абонентов)
+# считается дольше таймаута прокси Amvera → 503. Поэтому /api/analyze запускает
+# расчёт в отдельном потоке и сразу отвечает job_id, а фронт опрашивает статус.
+# Один воркер — чтобы на маленьком контейнере не считать два тяжёлых файла разом.
+_EXECUTOR = ThreadPoolExecutor(max_workers=1)
+_JOBS: "OrderedDict[str, dict]" = OrderedDict()
+
+
+def _prune_jobs():
+    while len(_JOBS) > 24:
+        _JOBS.popitem(last=False)
 
 
 def _prune(store: OrderedDict):
@@ -209,20 +223,47 @@ async def upload_chunk(
             "rows": int(len(df)), "size": len(buf)}
 
 
-# ── Анализ ─────────────────────────────────────────────────────────────────
-# Синхронный def — FastAPI выполнит его в threadpool, поэтому тяжёлый analyze()
-# НЕ блокирует event-loop (иначе прокси Amvera отдаёт 503 на параллельные CSS/API).
-@app.post("/api/analyze")
-def analyze_endpoint(payload: dict):
-    file_id = payload.get("file_id")
-    values = payload.get("params", {})
+# ── Анализ (в фоне) ─────────────────────────────────────────────────────────
+def _do_analyze(job_id: str, file_id: str, values: dict):
+    """Тяжёлый расчёт в отдельном потоке; результат/ошибка кладётся в _JOBS."""
     try:
         res = _run_analysis(file_id, values)
+        out = _summary_payload(res)
+        out["file_id"] = file_id
+        _JOBS[job_id] = {"status": "done", "result": out}
+    except HTTPException as e:
+        _JOBS[job_id] = {"status": "error", "error": str(e.detail)}
     except ValueError as e:
-        raise HTTPException(400, str(e))
-    out = _summary_payload(res)
-    out["file_id"] = file_id
-    return JSONResponse(out)
+        _JOBS[job_id] = {"status": "error", "error": str(e)}
+    except Exception as e:  # noqa: BLE001 — любую ошибку показываем пользователю
+        _JOBS[job_id] = {"status": "error", "error": f"Ошибка анализа: {e}"}
+    _prune_jobs()
+
+
+@app.post("/api/analyze")
+def analyze_start(payload: dict):
+    """Стартует анализ в фоне и сразу отдаёт job_id (без ожидания расчёта)."""
+    file_id = payload.get("file_id")
+    if file_id not in _FILES:
+        raise HTTPException(404, "Файл не найден или устарел — загрузите заново")
+    job_id = uuid.uuid4().hex
+    _JOBS[job_id] = {"status": "running"}
+    _prune_jobs()
+    _EXECUTOR.submit(_do_analyze, job_id, file_id, payload.get("params", {}) or {})
+    return {"job_id": job_id, "status": "running"}
+
+
+@app.get("/api/analyze/status/{job_id}")
+def analyze_status(job_id: str):
+    """Опрос статуса фоновой задачи анализа."""
+    job = _JOBS.get(job_id)
+    if not job:
+        raise HTTPException(404, "Задача анализа не найдена (устарела) — повторите")
+    if job["status"] == "error":
+        raise HTTPException(400, job["error"])
+    if job["status"] == "done":
+        return JSONResponse({"status": "done", **job["result"]})
+    return {"status": "running"}
 
 
 # ── Карточка абонента (данные для экрана) ──────────────────────────────────
