@@ -32,6 +32,19 @@ import ui_meta as M
 BASE = Path(__file__).parent
 app = FastAPI(title="Анализ потребления")
 
+
+@app.middleware("http")
+async def _revalidate_static(request, call_next):
+    """no-cache на страницу и статику (index.html, /static, /assets, favicon):
+    браузер обязан ревалидировать по ETag, поэтому после пересборки сразу
+    подхватывает новый app.js/ui.css — без ручного сброса кэша. API не трогаем."""
+    resp = await call_next(request)
+    p = request.url.path
+    if p == "/" or p == "/favicon.ico" or p.startswith("/static") or p.startswith("/assets"):
+        resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 # ── Хранилища в памяти (ничего не пишем на диск) ──────────────────────────
