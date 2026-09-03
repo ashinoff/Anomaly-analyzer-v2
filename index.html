@@ -1,0 +1,2669 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Анализатор ПУ ТП</title>
+<link rel="icon" href="static/favicon.svg" type="image/svg+xml">
+<script src="static/xlsx.full.min.js"></script><!-- библиотека Excel локально: работает без доступа в интернет -->
+<style>
+:root{
+  --bg:#14181F; --panel:#1C222B; --panel2:#232B36; --line:#2E3844;
+  --ink:#E9EEF4; --mut:#8FA0B3;
+  --ok:#46C08A; --warn:#F2B63C; --bad:#F05B4A; --dead:#64748B; --acc:#6FB3FF;
+  --face:#EFE8D8; --face-ink:#23262B;
+  --mono:"JetBrains Mono","Consolas","SF Mono","Courier New",monospace;
+  --cond:"Arial Narrow","PT Sans Narrow","Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+b{font-weight:600}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 64px}
+
+/* ---- шапка-консоль ---- */
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#1A2029,#14181F)}
+.head{max-width:1120px;margin:0 auto;padding:18px 16px 14px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-family:var(--cond);font-weight:700;font-size:26px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+h1 i{font-style:normal;color:var(--warn)}
+h1 .bolt{width:20px;height:20px;fill:var(--warn);flex:none;filter:drop-shadow(0 0 6px rgba(242,182,60,.9));animation:boltGlow 2.8s ease-in-out infinite}
+@keyframes boltGlow{0%,100%{filter:drop-shadow(0 0 3px rgba(242,182,60,.5))}50%{filter:drop-shadow(0 0 10px rgba(242,182,60,.95))}}
+@media (prefers-reduced-motion:reduce){h1 .bolt{animation:none}}
+.head .ver{color:var(--mut);font-family:var(--mono);font-size:12px}
+#meta{max-width:1120px;margin:0 auto;padding:0 16px 12px;color:var(--mut);font-size:13px}
+#meta b{color:var(--ink);font-weight:600}
+
+/* ---- пульт загрузки ---- */
+.deck{display:grid;grid-template-columns:1fr auto;gap:12px;margin:18px 0 8px;align-items:stretch}
+#drop{border:1.5px dashed var(--line);border-radius:10px;background:var(--panel);padding:14px 18px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:border-color .15s,background .15s}
+#drop:hover,#drop.hot{border-color:var(--acc);background:#1D2733}
+#drop .di{width:34px;height:34px;border-radius:8px;background:var(--panel2);display:grid;place-items:center;color:var(--acc);font-size:18px;flex:0 0 auto}
+#drop .dt b{display:block}
+#drop .dt span{color:var(--mut);font-size:12.5px}
+.side{display:flex;flex-direction:column;gap:8px;justify-content:center}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 14px;font:600 13px/1.2 "Segoe UI",sans-serif;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.tariff{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:12.5px}
+.tariff input{width:92px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:7px 10px;font-family:var(--mono);font-size:13px}
+.tariff input:focus{outline:none;border-color:var(--acc)}
+#notes{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.note{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;color:var(--mut);font-size:12.5px}
+.note.bad{border-color:var(--bad);color:#F2B0A8}
+.note.ok{border-color:var(--ok);color:#A9DFC2}
+.note.ok a{color:var(--ok)}
+.btn-reset:hover{border-color:var(--bad);color:var(--bad)}
+
+/* ---- KPI ---- */
+#kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kv{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:.02em}
+.kl{color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;margin-top:2px;font-family:var(--cond)}
+.k-red .kv{color:var(--bad);text-shadow:0 0 16px rgba(240,91,74,.5)}
+.k-amber .kv{color:var(--warn);text-shadow:0 0 16px rgba(242,182,60,.45)}
+.k-dead .kv{color:var(--dead)}
+.k-loss .kv{color:var(--acc);text-shadow:0 0 16px rgba(111,179,255,.45)}
+
+#balance{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
+.balrow{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.balrow.mut{color:var(--mut);font-size:12.5px}
+.btag{font-family:var(--mono);font-size:12px;border-radius:6px;padding:2px 8px;border:1px solid}
+.btag.ok{color:var(--ok);border-color:var(--ok)} .btag.warn{color:var(--warn);border-color:var(--warn)} .btag.bad{color:var(--bad);border-color:var(--bad)}
+.balrow .bv{font-family:var(--mono);font-size:13.5px;font-weight:700}
+.bv-sup{color:var(--acc)} .bv-use{color:var(--ok)} .bv-imb{color:var(--bad)}
+
+/* ---- вкладки (подсветка меню) ---- */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:18px 0 0;flex-wrap:wrap}
+.tab{--tc:var(--ink);--tg:rgba(233,238,244,.3);display:inline-flex;align-items:center;gap:8px;background:none;border:none;color:var(--mut);font:600 13px var(--cond);letter-spacing:.1em;text-transform:uppercase;padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:9px 9px 0 0;transition:color .15s,text-shadow .15s,background .15s}
+.tab svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.tab[data-tab="rank"]{--tc:#FF8272;--tg:rgba(240,91,74,.55)}
+.tab[data-tab="heat"]{--tc:#FFC554;--tg:rgba(242,182,60,.55)}
+.tab[data-tab="bal"]{--tc:#C4A8FF;--tg:rgba(139,92,246,.55)}
+.tab[data-tab="algs"]{--tc:#7FBCFF;--tg:rgba(111,179,255,.55)}
+.tab[data-tab="doc"]{--tc:#5AD49E;--tg:rgba(70,192,138,.55)}
+.tab:hover{color:var(--tc)}
+.tab.on{color:var(--tc);border-bottom-color:var(--tc);background:linear-gradient(180deg,rgba(255,255,255,.035),transparent);text-shadow:0 0 14px var(--tg);box-shadow:0 12px 20px -12px var(--tg)}
+.tab.on svg{filter:drop-shadow(0 0 4px var(--tg))}
+.tab .tdot{width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 8px rgba(242,182,60,.95);flex:none}
+.pane{display:none;padding-top:14px}
+.pane.show{display:block}
+
+/* ---- таблица рейтинга ---- */
+.thead,.row{display:grid;grid-template-columns:34px minmax(200px,1.5fr) 70px 90px 140px 130px minmax(120px,1fr);gap:10px;align-items:center;padding:8px 12px}
+.thead{color:var(--mut);font-family:var(--cond);font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid var(--line)}
+.row{background:var(--panel);border:1px solid var(--line);border-radius:8px;margin-top:6px;cursor:pointer;transition:border-color .12s}
+.row:hover{border-color:#3D4A5A}
+.row.openrow{border-color:var(--acc)}
+.row.dead{opacity:.75}
+.c-rk{color:var(--mut);font-family:var(--mono);font-size:12px}
+.mono{font-family:var(--mono)}
+.c-id{min-width:0}
+.c-id .sub{color:var(--mut);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:1px}
+.dot.red{background:var(--bad);box-shadow:0 0 8px rgba(240,91,74,.9)}
+.dot.amber{background:var(--warn);box-shadow:0 0 8px rgba(242,182,60,.8)}
+.dot.green{background:var(--ok);box-shadow:0 0 7px rgba(70,192,138,.65)}
+.dot.dead{background:var(--dead);box-shadow:0 0 6px rgba(100,116,139,.55)}
+.c-pw,.c-avg{font-size:13px;text-align:right}
+.bar{height:7px;background:var(--panel2);border-radius:4px;overflow:hidden;flex:1}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ok) 0 20%,var(--warn) 20% 45%,var(--bad) 45%);border-radius:4px;box-shadow:0 0 6px rgba(240,91,74,.35)}
+.c-sc{display:flex;align-items:center;gap:8px}
+.c-sc .mono{font-size:13px;width:26px;text-align:right}
+.chip{display:inline-block;font-family:var(--mono);font-size:11px;border:1px solid var(--line);background:var(--panel2);border-radius:5px;padding:1px 6px;margin:1px 3px 1px 0;color:var(--ink)}
+.weakchip{color:var(--mut);border-style:dashed}
+.dupchip{color:var(--warn);border-color:var(--warn)}
+.typechip{color:var(--acc);border-color:rgba(111,179,255,.55)}
+.boostchip{color:#D9B8FF;border-color:#8B5CF6;box-shadow:0 0 7px rgba(139,92,246,.5)}
+
+/* ---- переключатель зон рейтинга ---- */
+.rmode{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:2px 0 10px;color:var(--mut);font-size:12.5px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:var(--panel);border:none;color:var(--mut);font:600 12px var(--cond);letter-spacing:.08em;text-transform:uppercase;padding:7px 12px;cursor:pointer;transition:background .15s,color .15s}
+.seg button:not(.on):hover{color:var(--ink)}
+.seg button.on{color:#0E1116;background:var(--acc);box-shadow:0 0 12px rgba(111,179,255,.55)}
+.rmthr{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rmthr input{width:78px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:5px 8px;font-family:var(--mono);font-size:12.5px}
+.rmthr input:focus{outline:none;border-color:var(--acc)}
+
+/* ---- вкладка «Баланс» ---- */
+.balkpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0}
+.bpct{display:flex;align-items:center;gap:12px;margin:8px 0 4px;color:var(--mut);font-size:12.5px;flex-wrap:wrap}
+.bpct input[type=range].tr{width:220px;margin:0}
+.bpct .val{font-family:var(--mono);color:var(--ink);min-width:38px}
+.bchart{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:8px}
+.bsup{fill:none;stroke:var(--warn);stroke-width:1.8;filter:drop-shadow(0 0 3px rgba(242,182,60,.5))}
+.buse{fill:none;stroke:var(--acc);stroke-width:1.8;filter:drop-shadow(0 0 3px rgba(111,179,255,.5))}
+.ballow{fill:none;stroke:#8fa0b3;stroke-width:1.2;stroke-dasharray:5 4;opacity:.9}
+.bscn{fill:none;stroke:var(--ok);stroke-width:1.9;stroke-dasharray:7 5;filter:drop-shadow(0 0 4px rgba(70,192,138,.65))}
+.bexc{fill:rgba(240,91,74,.16)}
+.bgain{fill:rgba(70,192,138,.16)}
+.bnull{fill:rgba(100,116,139,.12)}
+.bdot{fill:var(--warn)} .budot{fill:var(--acc)}
+.scenbox{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.scen{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.scen:hover{border-color:var(--acc)}
+.scen.onb{border-color:var(--ok);box-shadow:0 0 14px -5px rgba(70,192,138,.75)}
+.scen b{font-size:13px}
+.scen .meta{color:var(--mut);font-size:12px;margin-top:3px}
+.bcand{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:6px;cursor:pointer;font-size:13px}
+.bcand:hover{border-color:#3D4A5A}
+.bcand.onb{border-color:var(--ok);box-shadow:0 0 10px -4px rgba(70,192,138,.6)}
+.bcand input{width:15px;height:15px;accent-color:var(--ok);flex:none;cursor:pointer}
+.bcand .amt{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap}
+.bcand .cov{color:var(--mut);font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+@media (max-width:900px){.scenbox{grid-template-columns:1fr}}
+
+/* ---- бусты приоритета (чек-боксы) ---- */
+.boostbox{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bopt{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;font-size:13px;color:#C3CEDA;transition:border-color .15s,box-shadow .15s}
+.bopt input{width:16px;height:16px;accent-color:#8B5CF6;cursor:pointer;flex:none}
+.bopt .pts{margin-left:auto;color:#D9B8FF;font-family:var(--mono);font-size:12px;white-space:nowrap}
+.bopt.onb{border-color:#8B5CF6;box-shadow:0 0 14px -5px rgba(139,92,246,.75);color:var(--ink)}
+@media (max-width:900px){.boostbox{grid-template-columns:1fr}}
+.spark{display:block}
+.spl{fill:none;stroke:var(--acc);stroke-width:1.4;filter:drop-shadow(0 0 2.5px rgba(111,179,255,.6))}
+.spz{fill:var(--bad);filter:drop-shadow(0 0 2px rgba(240,91,74,.85))}
+.spsh{stroke:var(--bad);stroke-width:1;stroke-dasharray:2 2;filter:drop-shadow(0 0 2px rgba(240,91,74,.6))}
+.mut{color:var(--mut)}
+
+/* ---- детальная панель ---- */
+.detail{display:grid;grid-template-columns:230px 1fr;gap:18px;background:var(--panel);border:1px solid var(--acc);border-top:none;border-radius:0 0 10px 10px;margin:-7px 0 6px;padding:16px}
+.detail.red{border-color:var(--bad)} .detail.amber{border-color:var(--warn)} .detail.dead{border-color:var(--dead)} .detail.green{border-color:var(--ok)}
+.gauge{width:200px;display:block;margin:0 auto}
+.gface{fill:var(--face);stroke:#0E1116;stroke-width:3}
+.garc{fill:none;stroke-width:5;stroke-linecap:butt}
+.g-ok{stroke:var(--ok);filter:drop-shadow(0 0 2.5px rgba(70,192,138,.55))}
+.g-warn{stroke:var(--warn);filter:drop-shadow(0 0 2.5px rgba(242,182,60,.55))}
+.g-bad{stroke:var(--bad);filter:drop-shadow(0 0 2.5px rgba(240,91,74,.55))}
+.gt{stroke:var(--face-ink);stroke-width:1.2}
+.gnum{fill:var(--face-ink);font:600 10px var(--mono);text-anchor:middle}
+.glabel{fill:var(--face-ink);font:700 9px var(--cond);letter-spacing:.25em;text-anchor:middle}
+.gneedle{stroke:#B3261E;stroke-width:2.6;stroke-linecap:round;filter:drop-shadow(0 0 4px rgba(179,38,30,.6))}
+.gpivot{fill:#23262B;stroke:#B3261E;stroke-width:1.5}
+.gscore{fill:var(--ink);font:700 13px var(--mono);text-anchor:middle}
+.facts{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px}
+.facts td{padding:5px 0;border-bottom:1px dashed var(--line);vertical-align:top}
+.facts td:first-child{color:var(--mut);padding-right:10px}
+.facts td:last-child{text-align:right;font-size:12px}
+.chart{width:100%;height:auto;display:block}
+.cgrid{stroke:var(--line);stroke-width:.6}
+.cyl{fill:var(--mut);font:10px var(--mono);text-anchor:end}
+.cxl{fill:var(--mut);font:10px var(--mono);text-anchor:middle}
+.cline{fill:none;stroke:var(--acc);stroke-width:1.8;filter:drop-shadow(0 0 4px rgba(111,179,255,.5))}
+.cgroup{fill:none;stroke:var(--ok);stroke-width:1.1;stroke-dasharray:2 3;opacity:.85}
+.cbase{stroke:var(--warn);stroke-width:1;stroke-dasharray:6 4;filter:drop-shadow(0 0 2px rgba(242,182,60,.45))}
+.cbl{fill:var(--warn);font:10px var(--mono);text-anchor:end}
+.cshift{stroke:var(--bad);stroke-width:1.2;stroke-dasharray:3 3;filter:drop-shadow(0 0 3px rgba(240,91,74,.55))}
+.cdot{fill:var(--acc)} .czero{fill:var(--bad);filter:drop-shadow(0 0 3px rgba(240,91,74,.8))}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--mut);font-size:11.5px;margin-top:4px}
+.legend span{display:flex;align-items:center;gap:6px}
+.lg{display:inline-block;width:16px;height:0;border-top:2px solid}
+.l1{border-color:var(--acc)} .l2{border-color:var(--ok);border-top-style:dashed} .l3{border-color:var(--warn);border-top-style:dashed} .l4{border-color:var(--bad);border-top-style:dotted}
+.dh{font-family:var(--cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:14px 0 8px}
+.fl{border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin-bottom:7px;background:var(--panel2)}
+.flh{font-weight:600;display:flex;align-items:center;gap:8px}
+.flh .pts{margin-left:auto;color:var(--warn);font-family:var(--mono);font-size:12px}
+.fld{color:#C3CEDA;font-size:12.8px;margin-top:4px}
+.cl{margin:0;padding-left:20px;color:#C3CEDA;font-size:13px}
+.cl li{margin:4px 0}
+
+/* ---- тепловая карта ---- */
+#heat{overflow-x:auto;padding-bottom:6px}
+.hrow{display:flex;gap:2px;margin-bottom:2px;cursor:pointer}
+.hrow:hover .hid{color:var(--acc)}
+.hhead{cursor:default;position:sticky;top:0;background:var(--bg);z-index:2;padding-top:2px}
+.hid{flex:0 0 170px;font-size:12px;display:flex;align-items:center;padding-right:8px;color:var(--ink)}
+.hcell{flex:0 0 26px;height:22px;border-radius:3px}
+.hcell.hc-sm{flex:0 0 13px;border-radius:2px}
+.hm{color:var(--mut);font:9.5px var(--mono);display:flex;align-items:flex-end;justify-content:center;background:none!important;height:26px;white-space:nowrap;overflow:visible}
+.hnull{border:1px dashed var(--line)}
+.hleg{display:flex;gap:16px;flex-wrap:wrap;color:var(--mut);font-size:11.5px;margin-top:10px;cursor:default}
+.hleg span{display:flex;align-items:center;gap:6px}
+.hleg i{width:14px;height:14px;border-radius:3px;display:inline-block}
+
+/* ---- алгоритмы и методика ---- */
+.alg{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px}
+.algh{display:flex;align-items:center;gap:10px;font-size:14.5px}
+.algh .pts{margin-left:auto;color:var(--warn);font-family:var(--mono);font-size:12px;white-space:nowrap}
+.algrow{display:grid;grid-template-columns:130px 1fr;gap:10px;margin-top:8px;font-size:13px;color:#C3CEDA}
+.algrow span{color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;font-family:var(--cond);padding-top:2px}
+.doc{max-width:none}
+.doc p,.doc ol,.doc ul,.doc>.note{max-width:900px}
+.doc h2{font-family:var(--cond);letter-spacing:.1em;text-transform:uppercase;font-size:16px;margin:26px 0 10px;color:var(--warn)}
+.doc h2:first-child{margin-top:4px}
+.doc p,.doc li{color:#C3CEDA;font-size:13.5px}
+.doc ol,.doc ul{padding-left:22px}
+.doc li{margin:5px 0}
+.doc .note{margin:12px 0}
+
+/* ---- калибровка чувствительности («крутилки») ---- */
+.tuner{margin:6px 0 10px}
+.tglob{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.trow{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}
+.trow .th{display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap}
+.trow .th b{font-weight:600}
+input.talg{width:15px;height:15px;accent-color:var(--ok);cursor:pointer;flex:none}
+.trow.toff{opacity:.5}
+.trow.toff input.tr{pointer-events:none}
+.tlev.off{color:var(--bad)}
+.alg.algoff{opacity:.5}
+.tlev{margin-left:auto;font:600 11px var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--mut);white-space:nowrap}
+.tlev.soft{color:var(--warn);text-shadow:0 0 10px rgba(242,182,60,.5)}
+.tlev.hard{color:var(--ok);text-shadow:0 0 10px rgba(70,192,138,.5)}
+.thint{color:var(--mut);font-size:12px;margin-top:4px}
+input[type=range].tr{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:3px;background:linear-gradient(90deg,rgba(242,182,60,.55),var(--line) 50%,rgba(70,192,138,.55));outline:none;margin:10px 0 3px;cursor:pointer}
+input[type=range].tr::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--ink);border:2px solid var(--acc);box-shadow:0 0 9px rgba(111,179,255,.85);cursor:pointer}
+input[type=range].tr::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--ink);border:2px solid var(--acc);box-shadow:0 0 9px rgba(111,179,255,.85);cursor:pointer}
+input[type=range].tr-num{background:var(--line)}
+input[type=range].tr-num::-webkit-slider-thumb{border-color:var(--warn);box-shadow:0 0 9px rgba(242,182,60,.85)}
+input[type=range].tr-num::-moz-range-thumb{border-color:var(--warn);box-shadow:0 0 9px rgba(242,182,60,.85)}
+.tscale{display:flex;justify-content:space-between;color:var(--mut);font-size:10.5px;font-family:var(--cond);letter-spacing:.06em;text-transform:uppercase}
+.treset{margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px}
+@media (max-width:900px){.tglob{grid-template-columns:1fr}}
+
+footer{color:var(--mut);font-size:11.5px;margin-top:34px;border-top:1px solid var(--line);padding-top:12px}
+
+/* ========================================================================== */
+/* ROSSETI-INSPIRED PRODUCTION THEME — VISUAL LAYER ONLY                       */
+/* ========================================================================== */
+:root{
+  color-scheme:light;
+  --bg:#F4F8FC;
+  --panel:#FFFFFF;
+  --panel2:#F1F7FC;
+  --line:#CFE0EE;
+  --ink:#17324D;
+  --mut:#667F97;
+  --ok:#18A36F;
+  --warn:#F28C28;
+  --bad:#E04B5F;
+  --dead:#8294A6;
+  --acc:#00A3E0;
+  --face:#F7FBFE;
+  --face-ink:#163A5B;
+  --ros-navy:#003B70;
+  --ros-blue:#005EB8;
+  --ros-sky:#00A3E0;
+  --ros-pale:#EAF6FC;
+  --ros-red:#E04B5F;
+  --ros-green:#18A36F;
+  --ros-orange:#F28C28;
+  --violet:#7868B2;
+  --shadow:0 18px 48px rgba(0,59,112,.10);
+  --shadow-soft:0 7px 22px rgba(0,59,112,.075);
+}
+
+html{background:var(--bg);scrollbar-color:#9FBBD0 #E7F0F7}
+body{
+  min-height:100vh;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 8% -6%,rgba(0,163,224,.10),transparent 30rem),
+    radial-gradient(circle at 96% 3%,rgba(0,94,184,.065),transparent 31rem),
+    linear-gradient(rgba(0,94,184,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,94,184,.025) 1px,transparent 1px),
+    var(--bg);
+  background-size:auto,auto,32px 32px,32px 32px,auto;
+  letter-spacing:.003em;
+}
+::selection{background:rgba(0,163,224,.20);color:var(--ros-navy)}
+*{scrollbar-width:thin;scrollbar-color:#9FBBD0 #E7F0F7}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:#E7F0F7}
+*::-webkit-scrollbar-thumb{background:#9FBBD0;border:2px solid #E7F0F7;border-radius:10px}
+
+.wrap,.head,#meta{max-width:1360px}
+.wrap{padding:0 22px 72px}
+
+header{
+  position:relative;
+  overflow:hidden;
+  border-bottom:1px solid #C9DDEA;
+  background:linear-gradient(180deg,rgba(255,255,255,.99),rgba(246,251,254,.98));
+  box-shadow:0 9px 30px rgba(0,59,112,.08);
+}
+header::before{
+  content:"";
+  position:absolute;
+  z-index:2;
+  inset:0 0 auto;
+  height:4px;
+  background:linear-gradient(90deg,var(--ros-navy) 0 26%,var(--ros-blue) 26% 63%,var(--ros-sky) 63% 100%);
+}
+header::after{
+  content:"";
+  position:absolute;
+  right:3%;
+  top:-58px;
+  width:360px;
+  height:175px;
+  transform:skewX(-25deg);
+  pointer-events:none;
+  border-top:1px solid rgba(0,94,184,.09);
+  border-bottom:1px solid rgba(0,163,224,.08);
+  background:linear-gradient(90deg,transparent,rgba(0,163,224,.028),transparent);
+}
+.head{position:relative;z-index:1;padding:26px 22px 12px;gap:16px}
+h1{color:var(--ros-navy);font-size:25px;letter-spacing:.15em;text-shadow:none}
+h1 i{color:var(--ros-sky);text-shadow:0 0 12px rgba(0,163,224,.28)}
+h1 .bolt{
+  width:23px;
+  height:23px;
+  fill:var(--ros-sky);
+  filter:drop-shadow(0 0 3px rgba(0,163,224,.85)) drop-shadow(0 0 9px rgba(0,163,224,.38));
+}
+@keyframes boltGlow{
+  0%,100%{filter:drop-shadow(0 0 2px rgba(0,163,224,.62)) drop-shadow(0 0 7px rgba(0,163,224,.22))}
+  50%{filter:drop-shadow(0 0 4px rgba(0,163,224,.95)) drop-shadow(0 0 13px rgba(0,163,224,.42))}
+}
+.head .ver{
+  color:#5F7991;
+  padding:4px 9px;
+  border:1px solid #D4E4EF;
+  border-radius:5px;
+  background:#F2F8FC;
+  font-size:10.5px;
+  letter-spacing:.025em;
+}
+#meta{position:relative;z-index:1;padding:0 22px 17px;color:#6A8399}
+#meta b{color:var(--ros-navy)}
+
+.deck{gap:14px;margin:22px 0 12px}
+#drop{
+  position:relative;
+  min-height:80px;
+  overflow:hidden;
+  border:1.5px dashed #8CBBD2;
+  border-radius:12px;
+  background:linear-gradient(135deg,#FFFFFF,#F4FAFE);
+  box-shadow:var(--shadow-soft),inset 0 1px 0 #fff;
+}
+#drop::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  right:0;
+  width:auto;
+  height:3px;
+  background:linear-gradient(90deg,var(--ros-navy),var(--ros-blue),var(--ros-sky));
+}
+#drop::after{
+  content:"";
+  position:absolute;
+  right:-28px;
+  top:-36px;
+  width:160px;
+  height:160px;
+  border:1px solid rgba(0,163,224,.12);
+  border-radius:50%;
+  box-shadow:0 0 0 24px rgba(0,163,224,.025),0 0 0 50px rgba(0,94,184,.014);
+  pointer-events:none;
+}
+#drop:hover,#drop.hot{
+  border-color:var(--ros-sky);
+  background:linear-gradient(135deg,#FFFFFF,#ECF8FD);
+  box-shadow:0 0 0 3px rgba(0,163,224,.09),var(--shadow-soft);
+}
+#drop .di{
+  position:relative;
+  z-index:1;
+  width:44px;
+  height:44px;
+  border:1px solid rgba(0,163,224,.27);
+  border-radius:11px;
+  background:linear-gradient(145deg,#E3F5FC,#F6FCFF);
+  color:var(--ros-sky);
+  box-shadow:inset 0 1px 0 #fff,0 0 16px rgba(0,163,224,.10);
+}
+#drop .di svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#drop .dt{position:relative;z-index:1}
+#drop .dt b{color:var(--ros-navy);font-size:14px;letter-spacing:.012em}
+#drop .dt span{display:block;max-width:920px;margin-top:2px;color:#667F97;line-height:1.48}
+.side{min-width:220px}
+
+.btn{
+  min-height:35px;
+  border-color:#BED5E5;
+  background:linear-gradient(180deg,#FFFFFF,#EEF6FB);
+  color:var(--ros-navy);
+  box-shadow:inset 0 1px 0 #fff,0 3px 10px rgba(0,59,112,.055);
+  letter-spacing:.012em;
+  transition:border-color .16s,color .16s,background .16s,transform .16s,box-shadow .16s;
+}
+.btn:hover{
+  border-color:var(--ros-sky);
+  color:var(--ros-blue);
+  background:linear-gradient(180deg,#FFFFFF,#E7F6FC);
+  box-shadow:0 0 0 3px rgba(0,163,224,.075),0 7px 18px rgba(0,59,112,.08);
+  transform:translateY(-1px);
+}
+.btn:active{transform:translateY(0)}
+.btn-reset:hover{border-color:var(--ros-red);color:#C73A4E;background:#FFF3F5;box-shadow:0 0 0 3px rgba(224,75,95,.07)}
+.tariff{justify-content:space-between;color:#667F97}
+.tariff input,.rmthr input{
+  border-color:#C7DCE9;
+  background:#FFFFFF;
+  color:#17324D;
+  box-shadow:inset 0 1px 3px rgba(0,59,112,.055);
+}
+.tariff input:focus,.rmthr input:focus{outline:none;border-color:var(--ros-sky);box-shadow:0 0 0 3px rgba(0,163,224,.10)}
+
+.note{
+  border-color:#CDE2EE;
+  background:linear-gradient(90deg,#EAF7FC,#FFFFFF 35%);
+  color:#587189;
+  box-shadow:inset 0 1px 0 #fff;
+}
+.note.bad{border-color:#F0CAD1;color:#A33849;background:linear-gradient(90deg,#FFF0F3,#FFFFFF 35%)}
+.note.ok{border-color:#C5E6D9;color:#137652;background:linear-gradient(90deg,#EBFAF4,#FFFFFF 35%)}
+.note.ok a{color:#137652}
+
+#kpi{gap:12px;margin:16px 0 12px}
+.kpi{
+  position:relative;
+  overflow:hidden;
+  min-height:84px;
+  border-color:#D0E1EC;
+  border-radius:12px;
+  background:linear-gradient(145deg,#FFFFFF,#F8FBFD);
+  box-shadow:var(--shadow-soft),inset 0 1px 0 #fff;
+}
+.kpi::before{content:"";position:absolute;left:0;top:0;width:100%;height:3px;background:linear-gradient(90deg,var(--ros-sky),rgba(0,163,224,.08) 75%)}
+.kpi::after{content:"";position:absolute;right:-26px;bottom:-36px;width:94px;height:94px;border-radius:50%;background:radial-gradient(circle,rgba(0,163,224,.06),transparent 68%)}
+.k-red::before{background:linear-gradient(90deg,var(--ros-red),rgba(224,75,95,.06) 75%)}
+.k-amber::before{background:linear-gradient(90deg,var(--ros-orange),rgba(242,140,40,.06) 75%)}
+.k-dead::before{background:linear-gradient(90deg,var(--dead),rgba(130,148,166,.06) 75%)}
+.k-loss::before{background:linear-gradient(90deg,var(--ros-sky),rgba(0,163,224,.06) 75%)}
+.kv{color:var(--ros-navy);font-size:23px;line-height:1.25}
+.kl{color:#6A8298;font-size:10.5px;font-weight:700;letter-spacing:.11em}
+.k-red .kv,.k-amber .kv,.k-loss .kv{text-shadow:none}
+
+.balrow,.bchart,.scen,.bcand,.bopt,.detail,.fl,.alg,.trow{
+  border-color:#D0E1EC;
+  background:linear-gradient(145deg,#FFFFFF,#F8FBFD);
+  color:var(--ink);
+  box-shadow:inset 0 1px 0 #fff;
+}
+.balrow{border-radius:10px}
+.balrow.mut,.scen .meta,.bcand .cov{color:#6A8298}
+.btag{background:#FFFFFF}
+
+.tabs{
+  gap:6px;
+  padding:5px;
+  border:1px solid #C9DEEB;
+  border-radius:11px;
+  background:rgba(255,255,255,.82);
+  box-shadow:var(--shadow-soft),inset 0 1px 0 #fff;
+}
+.tab{
+  flex:1 1 150px;
+  justify-content:center;
+  min-height:41px;
+  margin:0;
+  padding:9px 14px;
+  border:1px solid transparent;
+  border-radius:7px;
+  color:#688198;
+  font-size:11.5px;
+  font-weight:700;
+  letter-spacing:.085em;
+}
+.tab svg{width:17px;height:17px;stroke-width:1.8;transition:filter .18s,color .18s}
+.tab[data-tab="rank"]{--tc:var(--ros-red);--tg:rgba(224,75,95,.50)}
+.tab[data-tab="heat"]{--tc:var(--ros-orange);--tg:rgba(242,140,40,.52)}
+.tab[data-tab="bal"]{--tc:var(--ros-green);--tg:rgba(24,163,111,.48)}
+.tab[data-tab="algs"]{--tc:var(--ros-sky);--tg:rgba(0,163,224,.55)}
+.tab[data-tab="doc"]{--tc:var(--ros-blue);--tg:rgba(0,94,184,.46)}
+.tab:hover{color:var(--tc);background:#F4F9FC}
+.tab.on{color:var(--tc);border-color:#CFE0EA;background:#F4F9FC;text-shadow:none;box-shadow:0 3px 10px rgba(0,59,112,.055)}
+.tab.on svg,.tab:hover svg{filter:drop-shadow(0 0 2px var(--tg)) drop-shadow(0 0 6px var(--tg))}
+.tab.on[data-tab="rank"]{background:#FFF3F5;border-color:#F0CAD1}
+.tab.on[data-tab="heat"]{background:#FFF7EE;border-color:#F2D6B9}
+.tab.on[data-tab="bal"]{background:#EFFAF6;border-color:#C5E6D9}
+.tab.on[data-tab="algs"]{background:#ECF8FD;border-color:#C1E4F1}
+.tab.on[data-tab="doc"]{background:#EEF5FC;border-color:#C6DAED}
+.tab .tdot{background:var(--ros-orange);box-shadow:0 0 3px rgba(242,140,40,.9),0 0 8px rgba(242,140,40,.48)}
+.pane{padding-top:16px}
+
+.rmode{color:#657E95}
+.seg{border-color:#C2D8E6;background:#EEF6FB}
+.seg button{background:transparent;color:#607A92}
+.seg button:not(.on):hover{color:var(--ros-navy)}
+.seg button.on{color:#FFFFFF;background:linear-gradient(180deg,#0FAFE8,#008FCC);box-shadow:0 0 9px rgba(0,163,224,.24)}
+.rmthr{color:#657E95}
+
+.thead{padding:9px 14px;color:var(--ros-blue);border-bottom-color:#C9DFEC;background:#EEF7FC;border-radius:8px;font-weight:700}
+.row{
+  border-color:#D2E2EC;
+  border-radius:9px;
+  background:linear-gradient(90deg,#FFFFFF,#F9FCFE);
+  box-shadow:0 3px 12px rgba(0,59,112,.045),inset 0 1px 0 #fff;
+  transition:border-color .14s,background .14s,transform .14s,box-shadow .14s;
+}
+.row:hover{border-color:#8FC4DA;background:linear-gradient(90deg,#FFFFFF,#F0F9FD);transform:translateY(-1px);box-shadow:0 8px 22px rgba(0,59,112,.075)}
+.row.openrow{border-color:var(--ros-sky);background:#EFF9FD;box-shadow:0 0 0 2px rgba(0,163,224,.075)}
+.row.red,.row.amber,.row.green,.row.dead{box-shadow:0 3px 12px rgba(0,59,112,.045),inset 0 1px 0 #fff;opacity:1}
+.row.red:hover{border-color:rgba(224,75,95,.70);box-shadow:0 0 0 1px rgba(224,75,95,.13),0 0 16px rgba(224,75,95,.16),0 8px 22px rgba(0,59,112,.07)}
+.row.amber:hover{border-color:rgba(242,140,40,.72);box-shadow:0 0 0 1px rgba(242,140,40,.13),0 0 16px rgba(242,140,40,.16),0 8px 22px rgba(0,59,112,.07)}
+.row.green:hover{border-color:rgba(24,163,111,.68);box-shadow:0 0 0 1px rgba(24,163,111,.12),0 0 16px rgba(24,163,111,.15),0 8px 22px rgba(0,59,112,.07)}
+.row.dead:hover{border-color:rgba(130,148,166,.72);box-shadow:0 0 0 1px rgba(130,148,166,.12),0 0 14px rgba(0,94,184,.10),0 8px 22px rgba(0,59,112,.065)}
+.c-rk,.c-id .sub{color:#6C8499}
+.dot.red{background:var(--ros-red);box-shadow:0 0 3px rgba(224,75,95,.92),0 0 8px rgba(224,75,95,.45)}
+.dot.amber{background:var(--ros-orange);box-shadow:0 0 3px rgba(242,140,40,.92),0 0 8px rgba(242,140,40,.44)}
+.dot.green{background:var(--ros-green);box-shadow:0 0 3px rgba(24,163,111,.90),0 0 8px rgba(24,163,111,.40)}
+.dot.dead{background:var(--dead);box-shadow:0 0 6px rgba(130,148,166,.38)}
+.bar{height:6px;background:#E3EDF4;box-shadow:inset 0 1px 3px rgba(0,59,112,.10)}
+.bar i{box-shadow:none}
+.chip{border-color:#C8DDE9;background:#F0F7FB;color:#2C4A64}
+.weakchip{color:#70879B}
+.dupchip{color:#B86916;border-color:#EDC89F;background:#FFF7EE}
+.typechip{color:#007FAF;border-color:#A9D8E8;background:#EAF8FC}
+.boostchip{color:#69599A;border-color:#CFC5E8;background:#F5F2FB;box-shadow:none}
+
+.detail{box-shadow:0 16px 34px rgba(0,59,112,.085)}
+.gface{fill:#F8FCFE;stroke:#C8DCE9}
+.gt{stroke:#57728A}.gnum,.glabel{fill:#36546D}.gscore{fill:var(--ros-navy)}
+.gneedle{stroke:#C43D51;filter:drop-shadow(0 0 3px rgba(224,75,95,.38))}
+.gpivot{fill:var(--ros-navy);stroke:#C43D51}
+.facts td{border-bottom-color:#D8E6EF}
+.facts td:first-child,.legend,.dh{color:#6A8298}
+.cgrid{stroke:#D6E5EE}.cyl,.cxl{fill:#6D8499}
+.cline{stroke:var(--ros-sky);filter:drop-shadow(0 0 3px rgba(0,163,224,.34))}
+.cgroup{stroke:var(--ros-green)}
+.cbase{stroke:var(--ros-orange);filter:drop-shadow(0 0 2px rgba(242,140,40,.28))}
+.cshift{stroke:var(--ros-red);filter:drop-shadow(0 0 2px rgba(224,75,95,.28))}
+.fl{background:#F5FAFD}
+.fld,.cl,.algrow,.doc p,.doc li{color:#536E85}
+
+.hhead{background:#F4F8FC}
+.hid{color:#24445F}
+.hcell{border:1px solid rgba(0,59,112,.045)}
+.hnull{border-color:#BED3E1}
+.hm,.hleg{color:#688198}
+.alg,.trow,.bchart{border-radius:12px;box-shadow:var(--shadow-soft),inset 0 1px 0 #fff}
+.algh b{color:var(--ros-navy)}
+.algrow span,.dh,.thead,.kl{font-weight:700}
+.doc h2{color:var(--ros-blue);text-shadow:none;border-bottom:1px solid #CBE2EF;padding-bottom:7px}
+.bopt{color:#4F6B82}
+.bopt.onb{border-color:#AFA3D1;background:#F7F5FC;box-shadow:0 0 0 2px rgba(120,104,178,.065);color:#27445C}
+.bopt .pts{color:#69599A}
+.scen.onb,.bcand.onb{border-color:#76C9AA;background:#F0FBF7;box-shadow:0 0 0 2px rgba(24,163,111,.06)}
+.bcand .amt{color:#294860}
+input[type=range].tr{height:5px;background:linear-gradient(90deg,rgba(242,140,40,.62),#C6DAE6 50%,rgba(24,163,111,.60))}
+input[type=range].tr::-webkit-slider-thumb{background:#FFFFFF;border-color:var(--ros-sky);box-shadow:0 0 3px rgba(0,163,224,.8),0 0 9px rgba(0,163,224,.30)}
+input[type=range].tr::-moz-range-thumb{background:#FFFFFF;border-color:var(--ros-sky);box-shadow:0 0 3px rgba(0,163,224,.8),0 0 9px rgba(0,163,224,.30)}
+button,input{font-family:inherit}
+button:focus-visible,input:focus-visible,#drop:focus-visible{outline:2px solid var(--ros-sky);outline-offset:3px}
+footer{border-top-color:#CFE0EA;color:#6E8498}
+
+@media (max-width:900px){
+  .wrap{padding-inline:14px}
+  .head,#meta{padding-left:16px;padding-right:16px}
+  .side{min-width:0}
+  .btn{flex:1 1 auto}
+  .tab{flex:1 1 135px}
+}
+@media (max-width:560px){
+  h1{font-size:20px;letter-spacing:.11em}
+  .head .ver{font-size:9.5px;line-height:1.45}
+  #drop{align-items:flex-start;padding:14px}
+  #drop .di{width:38px;height:38px}
+  .kv{font-size:20px}
+  .tabs{gap:4px}
+  .tab{flex-basis:calc(50% - 4px);padding-inline:8px;font-size:10.5px}
+}
+
+@media (max-width:900px){
+  .deck{grid-template-columns:1fr}
+  .side{flex-direction:row;flex-wrap:wrap;align-items:center}
+  .thead{display:none}
+  .row{grid-template-columns:1fr auto;grid-auto-rows:auto;row-gap:6px}
+  .c-rk,.c-pw{display:none}
+  .c-id{grid-column:1/2} .c-sc{grid-column:2/3;min-width:130px}
+  .c-avg{display:none}
+  .c-sp{grid-column:1/2} .c-fl{grid-column:2/3;text-align:right}
+  .detail{grid-template-columns:1fr}
+  .algrow{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <h1><svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.6 2 5 13.4h4.9L9 22l9.9-11.6h-5.2L13.6 2z"/></svg>Анализатор ПУ <i>·</i> ТП</h1>
+    <span class="ver">v4.3 · потолок недоучёта по диапазону мощности (0,22/0,4 кВ) · баланс ТП со сценариями · юр/физ · бусты · калибровка</span>
+  </div>
+  <div id="meta">Загрузка…</div>
+</header>
+
+<div class="wrap">
+  <div class="deck">
+    <div id="drop" title="Загрузить выгрузку потребления">
+      <div class="di"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M5 14.5v3.7A1.8 1.8 0 0 0 6.8 20h10.4a1.8 1.8 0 0 0 1.8-1.8v-3.7"/></svg></div>
+      <div class="dt"><b>Загрузить выгрузку (.xlsx / .csv)</b><span>Шаблон: колонка «№ ПУ», при желании ТП / мощность / тип (юр/физ) / напряжение (0,22/0,4) / абонент / адрес, дальше месяцы. Понимает «Столбец1…N», итоги и накопительные показания; без колонок тип определяется по названию абонента, напряжение — по мощности (≤10 кВт → 0,22).</span></div>
+      <input id="file" type="file" accept=".xlsx,.xls,.xlsm,.csv,.txt" hidden>
+    </div>
+    <div class="side">
+      <button class="btn" id="btnTpl">Скачать шаблон .xlsx</button>
+      <button class="btn" id="btnCsv">Экспорт рейтинга (CSV)</button>
+      <button class="btn btn-reset" id="btnReset" title="Очистить загруженные данные и начать заново">Сбросить данные</button>
+    </div>
+  </div>
+  <div id="notes"></div>
+  <div id="kpi"></div>
+  <div id="balance"></div>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="rank"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-6M9.3 20V9M14.7 20v-8M20 20V4"/></svg>Рейтинг риска</button>
+    <button class="tab" data-tab="heat"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.4"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.4"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.4"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.4"/></svg>Тепловая карта</button>
+    <button class="tab" data-tab="bal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v17M7.5 20.5h9M12 5.5 5 7.5m7-2 7 2M5 7.5l-2.6 5.6a3 3 0 0 0 5.2 0L5 7.5zM19 7.5l-2.6 5.6a3 3 0 0 0 5.2 0L19 7.5z"/></svg>Баланс</button>
+    <button class="tab" data-tab="algs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg>Алгоритмы</button>
+    <button class="tab" data-tab="doc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5h11M9.5 12h11M9.5 18.5h11M3.5 5.5l1.2 1.2 2.3-2.3M3.5 12l1.2 1.2 2.3-2.3M3.5 18.5l1.2 1.2 2.3-2.3"/></svg>Методика проверки<span class="tdot" id="calDot" hidden></span></button>
+  </div>
+
+  <div class="pane show" id="pane-rank">
+    <div class="rmode">
+      <span>Зоны и порядок рейтинга:</span>
+      <div class="seg" id="zoneSeg">
+        <button data-zone="score" class="on" title="красная/жёлтая зоны по баллам риска 0–100">по риску</button>
+        <button data-zone="loss" title="красная/жёлтая зоны по оценке недоучёта, кВт·ч — сначала самые «дорогие»">по объёму недоучёта</button>
+      </div>
+      <span class="rmthr" id="rmthr" hidden>красная ≥ <input id="lossRedInp" inputmode="numeric"> жёлтая ≥ <input id="lossAmberInp" inputmode="numeric"> кВт·ч</span>
+    </div>
+    <div class="thead">
+      <div>#</div><div>Прибор учёта</div><div style="text-align:right">кВт</div><div style="text-align:right">ср. кВт·ч/мес</div><div>профиль</div><div>риск</div><div>признаки</div>
+    </div>
+    <div id="rank"></div>
+  </div>
+
+  <div class="pane" id="pane-heat"><div id="heat"></div></div>
+  <div class="pane" id="pane-bal"><div id="bal"></div></div>
+  <div class="pane" id="pane-algs"><div id="algs"></div></div>
+
+  <div class="pane" id="pane-doc"><div class="doc">
+    <div class="note">Инструмент даёт <b>вероятностные признаки</b> — это основание для проверки и приоритизации выездов, а не доказательство нарушения и не расчёт для доначисления. Решение всегда за очной проверкой и актом.</div>
+
+    <h2>Калибровка чувствительности алгоритмов</h2>
+    <p>Если в красную зону попадает много объектов, которые при выезде оказываются «чистыми», — <b>ужесточите</b> нужные признаки (слайдер вправо): критерий срабатывания станет жёстче, а вес признака в итоговом риске — меньше. Если, наоборот, анализатор пропускает нарушителей, — <b>смягчите</b> (влево). Пороги красной и жёлтой зон тоже регулируются. <b>Галочка слева</b> полностью включает или исключает признак из анализа — так методика адаптируется под район проверки: с промзоной или без, газифицированный или с электроотоплением и т.д. По умолчанию включены все. Всё пересчитывается сразу и запоминается в этом браузере; «Стандарт v3» возвращает заводскую калибровку (все признаки включены).</p>
+    <div id="tuner" class="tuner"></div>
+
+    <h2>Приоритеты проверки (буст баллов)</h2>
+    <p>Галочка добавляет баллы всем ПУ, подходящим под условие, — такие потребители поднимаются в рейтинге и могут перейти в более «горячую» зону. Это не признак нарушения, а <b>управленческий приоритет</b>: кого при прочих равных проверять первым. Работает и вместе с зонами «по объёму недоучёта» (влияет на порядок внутри зон).</p>
+    <div id="booster" class="tuner"></div>
+
+    <h2>1. Кабинетный этап — работа с этим анализатором</h2>
+    <ol>
+      <li>Загрузите выгрузку по ТП (или нескольким ТП — добавьте колонку «ТП», и сравнение с соседями пойдёт внутри каждой группы).</li>
+      <li>Красная зона (по умолчанию риск ≥45, порог настраивается в разделе «Калибровка» выше) — кандидаты на внеплановую проверку целиком; жёлтая — в маршрут ближайшего обхода; «нулевой ряд» — сверка статуса договора и физического подключения.</li>
+      <li>Откройте карточку каждого красного ПУ: посмотрите график, точку перелома и сработавшие признаки — из них складывается версия, которую нужно проверить на месте.</li>
+      <li>Если в шаблоне есть строка «Отпуск в сеть ТП-…», анализатор считает небаланс подстанции и сверяет провалы конкретных ПУ с его ростом (алгоритм S11) — это сильное подтверждение. А во вкладке <b>«Баланс»</b> можно задать допустимый уровень потерь и подобрать сценарий: какие потребители (по одному или группой) закрывают сверхнормативную разницу «отпуск в сеть − полезный отпуск» — авто-подбором или галочками, с пунктиром «каким мог бы быть полезный отпуск».</li>
+      <li>Выгрузите CSV-рейтинг — он же план-задание на проверку с оценками объёмов.</li>
+    </ol>
+
+    <h2>2. Подготовка к выезду</h2>
+    <ul>
+      <li>История: дата установки/замены ПУ, тип прибора, класс точности, межповерочный интервал, перечень пломб по паспорту.</li>
+      <li>Предыдущие акты: допуска, проверок, доначислений — особенно за периоды провалов и «пробуждений».</li>
+      <li>Договор: статус, разрешённая мощность, категория потребителя; журнал контрольных обходов по адресу.</li>
+      <li>Схема присоединения: опора/линия, есть ли техническая возможность подключения до прибора.</li>
+      <li>Инструмент: токоизмерительные клещи, фотоаппарат/телефон, бланки актов, пломбировочный материал, индикатор магнитного поля.</li>
+    </ul>
+
+    <h2>3. Осмотр на объекте</h2>
+    <ol>
+      <li><b>Ввод от опоры до ПУ.</b> Отводы, скрутки, следы набросов, «лишние» кабели, подключения до прибора учёта, состояние изоляции в местах возможного вмешательства.</li>
+      <li><b>Корпус и окно прибора.</b> Целостность, следы вскрытия, сверления, нагрева; посторонние предметы рядом (магниты часто оставляют следы или крепёж).</li>
+      <li><b>Пломбы.</b> Госповерка на корпусе, пломба сетевой/сбытовой на клеммной крышке, антимагнитная наклейка — сверить номера с актом допуска, зафиксировать состояние индикатора.</li>
+      <li><b>Работа прибора.</b> Индикатор нагрузки при включённых потребителях, ход показаний, ошибки на дисплее электронного ПУ, журнал событий (вскрытие крышки, магнитное поле) — у современных приборов он читается.</li>
+    </ol>
+
+    <h2>4. Инструментальная сверка</h2>
+    <ol>
+      <li>Включить в доме заведомую нагрузку (чайник, обогреватель — 1–2 кВт).</li>
+      <li>Клещами измерить ток на вводном проводе и сравнить с мгновенной мощностью/током на дисплее ПУ. Расхождение в разы — прямое указание на обвод или вмешательство.</li>
+      <li>Снять контрольные показания и повторить съём через 7–10 дней: сопоставить фактический расход с типичным для объекта.</li>
+      <li>Если ПУ в АСКУЭ — сверить локальные показания с системой за одну дату.</li>
+    </ol>
+
+    <h2>5. Оформление</h2>
+    <ul>
+      <li>При подтверждении — акт о неучтённом потреблении в порядке Основных положений (ПП РФ № 442): место, время, способ вмешательства, приборы, пломбы, замеры, присутствующие лица.</li>
+      <li>Фото- и видеофиксация каждого пункта до любых манипуляций с прибором; вручение копии акта потребителю (или отметка об отказе, подписи двух незаинтересованных лиц).</li>
+      <li>Безучётное (вмешательство при действующем договоре) и бездоговорное (потребление без договора) оформляются по-разному — расчёт объёма ведётся по правилам соответствующего раздела Основных положений, а не по оценкам этого инструмента.</li>
+      <li>По «нулевым» ПУ с признаками жизни на объекте — начинать именно с проверки на бездоговорное потребление.</li>
+    </ul>
+
+    <h2>6. Как усилить анализ</h2>
+    <ul>
+      <li>Добавьте в шаблон строку <b>«Отпуск в сеть ТП-…»</b> с помесячным расходом по вводу подстанции — включится расчёт небаланса и алгоритм S11. Номер ПУ тех. учёта пишите прямо в тексте строки (например «Отпуск в сеть ТП-94 Т1 ПУ № 100200301») — он покажется в Балансе. Если вводов два — заведите ДВЕ строки, Т1 и Т2, с одной и той же ТП: они автоматически суммируются в один ввод; месяц без данных любого из вводов исключается из анализа.</li>
+      <li>Добавьте колонку <b>«ТП»</b>, если в файле несколько подстанций — сравнение с соседями станет корректнее.</li>
+      <li>Добавьте колонку <b>«Тип (юр/физ)»</b> — групповые признаки (S5 «нули при живой группе», S8 «ниже соседей», S9 «против сезона» и поправки S3/S14) будут сравнивать юр. лица с юр. лицами, а быт — с бытом (где таких ПУ от 6). Без колонки тип определяется по названию абонента (ООО/ИП против ФИО), это менее надёжно.</li>
+      <li><b>Потолок по разрешённой мощности.</b> Оценка недоучёта каждого ПУ ограничена физически возможным объёмом его диапазона техприсоединения: верхняя граница диапазона × 730 ч в месяц, минус уже оплаченный объём. Напряжение можно задать явно колонкой <b>«Напряжение, кВ»</b> (0,22 / 0,4 — принимает и «220»/«380»); если колонки нет или ячейка пуста, действует правило по умолчанию: до 10 кВт — 0,22 кВ (типовой однофазный диапазон до 15 кВт, СИП-4 2×16), свыше — 0,4 кВ с диапазонами по допустимому току СИП (cos φ = 0,9): до 59, 59–77, 77–95, 95–116, 116–142, 142–178, 178–201, 201–225, 225–258, 258–305 кВт. Диапазон, потолок и срезанный объём показываются в карточке ПУ.</li>
+      <li>Идеальная периодичность — месяц; чем длиннее ряд, тем лучше: от 2,5 лет включаются «годовые» алгоритмы (S13, S14), на 5–7 годах видно и медленные схемы.</li>
+      <li><b>Важное ограничение:</b> хищение с постоянной долей, начатое ДО первого месяца ряда, по форме профиля не видно — расход выглядит «нормальным», просто занижен. Такие случаи ловят небаланс ТП (строка «Отпуск в сеть …» + S11), сверка с разрешённой мощностью (S10) и инструментальная проверка. Поэтому зелёный цвет означает «нет динамических признаков», а не «нарушений нет».</li>
+      <li>После каждой проверки возвращайте результат в файл (доначисление, замена ПУ) — картина потерь по ТП будет сходиться.</li>
+    </ul>
+  </div></div>
+
+  <footer>Анализатор работает полностью в браузере: файлы никуда не передаются. Оценки недоучёта — ориентировочные, для приоритизации проверок.</footer>
+</div>
+
+<script>
+const EMBEDDED_MATRIX = [["№ ПУ", "ТП", "Разрешенная мощность, кВт", "Тип (юр/физ)", "Абонент", "Адрес", "Январь 2022, кВт·ч", "Февраль 2022, кВт·ч", "Март 2022, кВт·ч", "Апрель 2022, кВт·ч", "Май 2022, кВт·ч", "Июнь 2022, кВт·ч", "Июль 2022, кВт·ч", "Август 2022, кВт·ч", "Сентябрь 2022, кВт·ч", "Октябрь 2022, кВт·ч", "Ноябрь 2022, кВт·ч", "Декабрь 2022, кВт·ч", "Январь 2023, кВт·ч", "Февраль 2023, кВт·ч", "Март 2023, кВт·ч", "Апрель 2023, кВт·ч", "Май 2023, кВт·ч", "Июнь 2023, кВт·ч", "Июль 2023, кВт·ч", "Август 2023, кВт·ч", "Сентябрь 2023, кВт·ч", "Октябрь 2023, кВт·ч", "Ноябрь 2023, кВт·ч", "Декабрь 2023, кВт·ч", "Январь 2024, кВт·ч", "Февраль 2024, кВт·ч", "Март 2024, кВт·ч", "Апрель 2024, кВт·ч", "Май 2024, кВт·ч", "Июнь 2024, кВт·ч", "Июль 2024, кВт·ч", "Август 2024, кВт·ч", "Сентябрь 2024, кВт·ч", "Октябрь 2024, кВт·ч", "Ноябрь 2024, кВт·ч", "Декабрь 2024, кВт·ч", "Январь 2025, кВт·ч", "Февраль 2025, кВт·ч", "Март 2025, кВт·ч", "Апрель 2025, кВт·ч", "Май 2025, кВт·ч", "Июнь 2025, кВт·ч", "Июль 2025, кВт·ч", "Август 2025, кВт·ч", "Сентябрь 2025, кВт·ч", "Октябрь 2025, кВт·ч", "Ноябрь 2025, кВт·ч", "Декабрь 2025, кВт·ч"], ["4101000101", "ТП-101", 45, "юр. лицо", "ООО «Магазин \"Колос\"»", "ст. Северная, ул. Ленина, 12", 2838, 2551, 2510, 2307, 2281, 2119, 2127, 1948, 2184, 2242, 2490, 2735, 2599, 2617, 2646, 2415, 2122, 2093, 2103, 1925, 2303, 2467, 2534, 2601, 2962, 2670, 2444, 2264, 2315, 2097, 377, 382, 398, 458, 457, 493, 522, 498, 488, 435, 407, 347, 347, 359, 372, 414, 438, 474], ["4101000102", "ТП-101", 15, "физ. лицо", "Смирнов А.П.", "ст. Северная, ул. Садовая, 3", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], ["4101000102", "ТП-101", 15, "физ. лицо", "Смирнов А.П.", "ст. Северная, ул. Садовая, 3", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 429, 383, 352, 322, 317, 356, 366, 396, 402, 458, 431, 437, 450, 398, 362, 345, 343, 349, 345, 364, 410, 430], ["4101000103", "ТП-101", 15, "физ. лицо", "Ковалёв Д.С.", "ст. Северная, пер. Степной, 7", 0, 53, 0, 94, 0, 1528, 0, 66, 0, 65, 0, 1397, 0, 72, 0, 80, 0, 1474, 0, 54, 0, 67, 0, 1357, 0, 43, 0, 89, 0, 1404, 0, 66, 0, 77, 0, 1522, 0, 37, 0, 83, 0, 1446, 0, 76, 0, 65, 0, 1541], ["4101000104", "ТП-101", 30, "юр. лицо", "ИП Гарин В.Т. (СТО «Мотор»)", "ст. Северная, трасса М-4, км 3", 1587, 1431, 1404, 1242, 1265, 1178, 1061, 1142, 1214, 1237, 1456, 1488, 1567, 1486, 1306, 1268, 1116, 1187, 1150, 1172, 1164, 1220, 1478, 1573, 193, 205, 193, 212, 213, 194, 204, 206, 1157, 1368, 1389, 1420, 1516, 1528, 1345, 1266, 1279, 1143, 1083, 1123, 1133, 1250, 1372, 1498], ["4101000105", "ТП-101", 25, "юр. лицо", "ООО «Пекарня \"Колосок\"»", "ст. Северная, ул. Мира, 41", 255, 255, 249, 270, 255, 280, 278, 249, 255, 271, 254, 251, 281, 268, 264, 276, 276, 254, 250, 262, 262, 264, 273, 271, 283, 250, 261, 259, 278, 256, 254, 263, 262, 257, 256, 281, 1933, 2010, 1827, 1574, 1654, 1515, 1504, 1534, 1621, 1602, 1811, 1836], ["4101000106", "ТП-101", 20, "юр. лицо", "КФХ «Заря»", "х. Восточный, 1", 1898, 1761, 1760, 1797, 1526, 1556, 1445, 1440, 1588, 1656, 1615, 1685, 1551, 1541, 1608, 1431, 1331, 1295, 1138, 1225, 1239, 1344, 1258, 1430, 1257, 1238, 1244, 1175, 1029, 953, 1025, 932, 996, 1030, 1028, 1064, 1044, 1064, 907, 905, 784, 751, 748, 701, 710, 771, 713, 756], ["4101000107", "ТП-101", 15, "физ. лицо", "Никитина Е.В.", "ст. Северная, ул. Школьная, 18", 208, 205, 171, 161, 149, 153, 149, 152, 152, 160, 190, 197, 198, 204, 185, 156, 161, 141, 144, 154, 147, 159, 171, 193, 189, 194, 187, 161, 157, 140, 141, 153, 162, 158, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 192, 192], ["4101000108", "ТП-101", 15, "физ. лицо", "Морозов В.И.", "ст. Северная, ул. Кубанская, 5", 350, 300, 300, 250, 250, 250, 250, 250, 250, 250, 300, 300, 350, 350, 300, 300, 250, 250, 250, 250, 250, 300, 300, 350, 300, 350, 300, 300, 250, 250, 250, 250, 250, 300, 300, 350, 300, 300, 300, 250, 250, 250, 250, 250, 250, 250, 300, 300], ["4101000109", "ТП-101", 15, "физ. лицо", "Захарова Л.М.", "ст. Северная, ул. Виноградная, 22", 298, 301, 377, 407, 539, 535, 618, 542, 478, 426, 366, 292, 284, 300, 349, 435, 488, 577, 540, 594, 508, 443, 367, 307, 274, 282, 363, 420, 492, 588, 598, 545, 492, 424, 350, 291, 265, 296, 377, 441, 534, 569, 564, 564, 470, 417, 351, 303], ["4101000110", "ТП-101", 60, "юр. лицо", "ООО «База отдыха \"Лиман\"»", "берег лимана, 1", 20, 16, 18, 21, 10, 19, 24, 20, 12, 13, 22, 16, 13, 17, 19, 23, 11, 13, 17, 14, 17, 22, 20, 25, 21, 23, 25, 16, 13, 22, 19, 10, 13, 17, 13, 20, 16, 15, 17, 19, 24, 14, 16, 25, 17, 19, 12, 15], ["4101000111", "ТП-101", 15, "физ. лицо", "Павлов Н.Н.", "ст. Северная, ул. Ленина, 30", 510, 525, 479, 429, 412, 367, 384, 362, 408, 454, 454, 523, 495, 510, 455, 442, 397, 378, 392, 381, 429, 471, 469, 482, 487, 515, 520, 441, 423, 403, 386, 401, 440, 431, 453, 487, 495, 525, 490, 432, 426, 402, 360, 393, 428, 426, 508, 546], ["4101000112", "ТП-101", 15, "физ. лицо", "Фёдорова О.А.", "ст. Северная, ул. Мира, 8", 345, 335, 331, 323, 308, 267, 273, 255, 298, 321, 321, 372, 383, 364, 322, 336, 301, 266, 262, 266, 290, -140, 357, 375, 345, 382, 347, 329, 298, 269, 273, 289, 280, 329, 342, 358, 362, 370, 329, 331, 303, 256, 279, 262, 288, 320, 334, 335], ["4101000113", "ТП-101", 15, "физ. лицо", "Голубев С.С.", "ст. Северная, пер. Тихий, 2", 57, 47, 48, 57, 50, 58, 55, 49, 44, 59, 46, 55, 52, 56, 55, 54, 52, 57, 46, 48, 55, 49, 53, 52, 52, 51, 56, 49, 55, 48, 48, 46, 47, 46, 53, 56, 47, 48, 52, 56, 59, 52, 49, 46, 47, 48, 47, 44], ["4101000114", "ТП-101", 15, "физ. лицо", "насл. Крыловой М.И.", "ст. Северная, ул. Старая, 9", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], ["4102000201", "ТП-102", 100, "юр. лицо", "ООО «Хлебозавод №3»", "пос. Заречный, промзона, 1", 3581, 3417, 3660, 3325, 3256, 2911, 3193, 3067, 3333, 3334, 3417, 3499, 3407, 3307, 3644, 3290, 3311, 3029, 2855, 3127, 2970, 3138, 3462, 3432, 3810, 3340, 3559, 3349, 3297, 2953, 3046, 3050, 3143, 3466, 3667, 3432, 3624, 3583, 3547, 3507, 3038, 2947, 3104, 2924, 3023, 3104, 3193, 3504], ["4102000202", "ТП-102", 40, "юр. лицо", "АО «Автоколонна 17»", "пос. Заречный, ул. Гаражная, 2", 1494, 1449, 1440, 1511, 1510, 1473, 1508, 1543, 1523, 1499, 1504, 1544, 1469, 1487, 1502, 1540, 1528, 1417, 1431, 1452, 1517, 1490, 1449, 1424, 1508, 1510, 1546, 1480, 1479, 1418, 1412, 1470, 1454, 1443, 1420, 1548, 1530, 1491, 1547, 1554, 1505, 1446, 1412, 1518, 1476, 1502, 1542, 1433], ["4102000203", "ТП-102", 30, "юр. лицо", "ИП Осипова К.Г. (кафе «У моря»)", "пос. Заречный, наб., 5", 579, 625, 725, 830, 1012, 1120, 1216, 1204, 1009, 904, 704, 651, 597, 618, 721, 857, 1008, 1222, 1172, 1149, 1105, 899, 730, 606, 547, 601, 752, 895, 1072, 1099, 1196, 1215, 1025, 904, 688, 654, 581, 591, 691, 886, 1042, 1081, 1270, 1213, 1028, 833, 760, 613], ["4102000216", "ТП-102", 50, "юр. лицо", "МБОУ СОШ №7", "пос. Заречный, ул. Школьная, 1", 1625, 1550, 1422, 1424, 1335, 1130, 1151, 1152, 1325, 1362, 1547, 1627, 1528, 1611, 1451, 1443, 1253, 1224, 1108, 1139, 1266, 1455, 1467, 1472, 1586, 1515, 1479, 1368, 1243, 1142, 1093, 1204, 1264, 1309, 1525, 1450, 1632, 1593, 1533, 1338, 1280, 1224, 1219, 1171, 1170, 1360, 1487, 1629], ["4102000217", "ТП-102", 20, "юр. лицо", "Администрация Заречного с/п", "пос. Заречный, ул. Советская, 1", 501, 463, 444, 408, 389, 349, 352, 336, 376, 437, 433, 479, 486, 490, 465, 431, 371, 344, 355, 366, 397, 383, 416, 475, 504, 499, 458, 406, 356, 360, 362, 350, 387, 433, 415, 486, 462, 459, 421, 412, 381, 368, 328, 332, 397, 417, 427, 494], ["4102000204", "ТП-102", 15, "физ. лицо", "Кузнецов И.И.", "пос. Заречный, ул. Речная, 3", 541, 545, 508, 471, 424, 424, 416, 419, 430, 478, 512, 550, 563, 543, 508, 493, 431, 410, 403, 405, 444, 483, 539, 538, 578, 553, 509, 483, 448, 422, 389, 417, 441, 496, 510, 560, 562, 540, 524, 485, 448, 421, 408, 425, 446, 495, 524, 538], ["4102000205", "ТП-102", 15, "физ. лицо", "Соколова А.Д.", "пос. Заречный, ул. Речная, 5", 456, 453, 435, 382, 357, 347, 323, 330, 365, 410, 428, 465, 470, 441, 438, 394, 372, 347, 328, 330, 377, 384, 443, 463, 466, 467, 443, 405, 359, 348, 319, 341, 362, 400, 432, 453, 470, 466, 413, 387, 350, 351, 333, 352, 355, 381, 438, 464], ["4102000206", "ТП-102", 15, "физ. лицо", "Лебедев М.А.", "пос. Заречный, ул. Речная, 7", 377, 373, 346, 342, 299, 284, 268, 293, 295, 329, 361, 383, 396, 373, 363, 321, 302, 275, 277, 282, 315, 318, 353, 374, 397, 386, 345, 335, 305, 295, 274, 282, 296, 320, 366, 374, 388, 380, 359, 317, 311, 278, 269, 286, 293, 337, 348, 367], ["4102000207", "ТП-102", 15, "физ. лицо", "Козлова Т.П.", "пос. Заречный, ул. Речная, 9", 340, 320, 299, 294, 252, 253, 233, 238, 257, 278, 312, 312, 318, 332, 301, 281, 255, 237, 244, 246, 267, 284, 315, 325, 320, 325, 319, 275, 268, 253, 240, 245, 272, 275, 307, 322, 336, 324, 318, 275, 253, 248, 231, 241, 265, 286, 303, 337], ["4102000208", "ТП-102", 15, "физ. лицо", "Новиков Е.С.", "пос. Заречный, ул. Речная, 11", 297, 289, 278, 247, 238, 226, 217, 224, 239, 249, 274, 284, 292, 289, 274, 247, 233, 223, 212, 214, 243, 246, 283, 281, 286, 296, 282, 256, 236, 221, 211, 213, 232, 258, 281, 299, 301, 301, 278, 252, 236, 215, 217, 215, 227, 262, 272, 296], ["4102000209", "ТП-102", 15, "физ. лицо", "Волкова Н.А.", "пос. Заречный, ул. Речная, 13", 251, 251, 239, 223, 203, 187, 183, 178, 205, 221, 228, 239, 253, 241, 229, 207, 204, 186, 179, 180, 200, 207, 237, 239, 248, 242, 230, 219, 202, 186, 175, 179, 192, 217, 235, 240, 253, 245, 231, 211, 202, 179, 180, 182, 201, 215, 235, 236], ["4102000210", "ТП-102", 15, "физ. лицо", "Соловьёв П.Р.", "пос. Заречный, ул. Речная, 15", 213, 212, 192, 182, 166, 155, 152, 157, 163, 189, 195, 209, 218, 211, 205, 190, 164, 164, 150, 153, 176, 190, 201, 212, 218, 209, 194, 178, 168, 163, 157, 164, 176, 179, 205, 206, 216, 211, 198, 182, 168, 157, 151, 159, 165, 185, 206, 208], ["Отпуск в сеть ТП-101 (тех. учёт ввода)", "ТП-101", "", "", "", "", 9723, 9096, 8928, 8437, 8062, 9251, 7683, 7515, 8006, 8270, 8844, 10610, 9199, 9182, 8814, 8504, 7658, 9086, 7391, null, 7904, 8074, 8586, 10307, 8223, 8001, 7963, 7536, 7309, 8242, 5733, 5724, null, 7167, 7099, 9031, 8732, 8878, 8256, 7756, 7623, 8585, 7055, 7142, 7270, 7582, 8033, 9854], ["Отпуск в сеть ТП-102 (тех. учёт ввода)", "ТП-102", "", "", "", "", 10901, 10566, 10613, 10308, 10052, 9460, 9820, 9719, 10128, 10324, 10564, 10920, 10628, 10588, 10749, 10326, 10042, 9685, 9311, 9651, 9855, 10070, 10563, 10472, 11179, 10613, 10819, 10317, 10042, 9451, 9433, 9721, 9891, 10357, 10705, 10694, 11077, 10840, 10713, 10478, 9847, 9516, 9750, 9632, 9657, 9998, 10390, 10780]];
+</script>
+<script>
+/* ================= ЯДРО АНАЛИЗАТОРА ПУ/ТП =================
+   Чистые функции без DOM — тестируются в node, встраиваются в HTML как есть. */
+
+const MONTHS_RU = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+const MONTHS_FULL = ['январ','феврал','март','апрел','ма[йя]','июн','июл','август','сентябр','октябр','ноябр','декабр'];
+const EPS = 3; // кВт·ч: всё, что ниже, считаем «практическим нулём»
+
+/* ---------- калибровка чувствительности (v4) ----------
+   Уровень s: -2 (намного мягче) … 0 (стандарт v3) … +2 (намного строже).
+   «Строже» = жёстче критерий срабатывания признака И меньший его вес в риске.
+   Для каждого алгоритма задан ряд из 5 значений порогов — по уровням s+2. */
+const TUNE_DEFS = {
+  sleeper:  {minZeros:[4,5,6,9,12], minPost:[30,40,50,90,150]},
+  ragged:   {minSpike:[2.5,3,4,6,8], minTrans:[2,2,3,4,5]},
+  step:     {rMax:[0.9,0.85,0.8,0.65,0.5]},
+  valley:   {rMax:[0.6,0.55,0.5,0.4,0.3]},
+  fade:     {rMax:[0.45,0.4,0.35,0.25,0.15]},
+  zeroAlive:{minZeros:[2,2,3,5,7]},
+  frozen:   {minRun:[3,3,4,5,6], maxCV:[4,3.5,3,2,1.5]},
+  round:    {minShare:[0.55,0.6,0.7,0.8,0.9]},
+  peers:    {maxFrac:[0.4,0.35,0.3,0.2,0.12]},
+  season:   {maxOwn:[0.7,0.65,0.6,0.5,0.4]},
+  idle:     {maxAvg:[25,20,15,8,4]},
+  imb:      {minCorr:[0.5,0.55,0.6,0.7,0.8]},
+  lone:     {minSum:[300,400,500,800,1200]},
+  stepup:   {minJump:[2,2.2,2.5,3.5,5]},
+  slow:     {rMax:[0.7,0.65,0.6,0.5,0.4]},
+};
+const PTS_FACTOR = [1.25, 1.1, 1, 0.85, 0.7]; // множитель веса признака по уровням
+
+/* ---------- диапазоны техприсоединения (реестр СИП 0,22 / 0,4 кВ) ----------
+   Разрешённая мощность попадает в диапазон; ВЕРХНЯЯ граница диапазона — это
+   максимально возможная мощность потребителя, она даёт физический потолок
+   месячного объёма (кВт × 730 ч). Оценка недоучёта не может превышать этот
+   потолок за вычетом уже оплаченного (учтённого) объёма.
+   Правило напряжения: ≤10 кВт — однофазное 0,22 кВ (типовой диапазон до 15 кВт,
+   СИП-4 2×16); свыше 10 кВт — 0,4 кВ по умолчанию, диапазоны по длительно
+   допустимому току СИП (ГОСТ 31946-2012, cos φ = 0,9). */
+const POWER_BANDS = [
+  {max:15,  u:'0,22', sip:'СИП-4 2×16'},
+  {max:59,  u:'0,4',  sip:'СИП-4 4×16'},
+  {max:77,  u:'0,4',  sip:'СИП-4 4×25'},
+  {max:95,  u:'0,4',  sip:'СИП-4 4×35'},
+  {max:116, u:'0,4',  sip:'СИП-4 4×50'},
+  {max:142, u:'0,4',  sip:'СИП-4 4×70'},
+  {max:178, u:'0,4',  sip:'СИП-4 4×95'},
+  {max:201, u:'0,4',  sip:'СИП-4 4×120'},
+  {max:225, u:'0,4',  sip:'СИП-4 4×150'},
+  {max:258, u:'0,4',  sip:'СИП-4 4×185'},
+  {max:305, u:'0,4',  sip:'СИП-4 4×240'},
+];
+const HOURS_MONTH = 730; // среднее число часов в месяце
+function powerBand(power, voltage){
+  // voltage — явное значение из колонки файла ('0,22' | '0,4'), если задано;
+  // иначе правило по умолчанию: ≤10 кВт → 0,22 кВ, выше → 0,4 кВ
+  if(power==null || !isFinite(power) || power<=0) return null;
+  const explicit = voltage==='0,22' || voltage==='0,4';
+  const u = explicit ? voltage : (power<=10 ? '0,22' : '0,4');
+  if(u==='0,22'){
+    const b=POWER_BANDS[0];
+    return {u, explicit, capKw:Math.max(b.max, power), sip:b.sip,
+      label: power<=b.max ? 'до '+b.max+' кВт (1ф)' : 'свыше '+b.max+' кВт (1ф)'};
+  }
+  let prev=null;
+  for(const b of POWER_BANDS.slice(1)){
+    if(power<=b.max) return {u, explicit, capKw:b.max, sip:b.sip, label:(prev==null?'до ':prev+' – ')+b.max+' кВт'};
+    prev=b.max;
+  }
+  return {u, explicit, capKw:power, sip:'вне таблицы СИП', label:'свыше 305 кВт'};
+}
+
+function buildTune(levels){
+  levels = levels || {};
+  const out = {};
+  for(const [k,def] of Object.entries(TUNE_DEFS)){
+    const s = Math.max(-2, Math.min(2, Math.round(levels[k]||0)));
+    const p = {level:s, ptsF:PTS_FACTOR[s+2]};
+    for(const [name,arr] of Object.entries(def)) p[name] = arr[s+2];
+    out[k] = p;
+  }
+  return out;
+}
+let TUNE = buildTune({});
+function setTune(levels, cls){
+  TUNE = buildTune(levels);
+  if(cls){
+    if(isFinite(cls.red)) CLS.red = cls.red;
+    if(isFinite(cls.amber)) CLS.amber = Math.min(cls.amber, CLS.red - 5);
+  }
+}
+
+/* ---------- режим зон рейтинга ----------
+   'score' — зоны по риску 0–100 (стандарт);
+   'loss'  — зоны по предполагаемому объёму недоучёта, кВт·ч. */
+const MODE = { zone:'score', lossRed:5000, lossAmber:1000 };
+function setZoneMode(zone, lossRed, lossAmber){
+  MODE.zone = zone==='loss' ? 'loss' : 'score';
+  if(isFinite(lossRed) && lossRed>0) MODE.lossRed = lossRed;
+  if(isFinite(lossAmber) && lossAmber>0) MODE.lossAmber = Math.min(lossAmber, MODE.lossRed);
+}
+
+/* ---------- бусты приоритета (чек-боксы в Методике) ----------
+   Включённый буст добавляет баллы всем ПУ, подходящим под условие, —
+   такие потребители поднимаются в рейтинге (и могут сменить зону). */
+const BOOST_DEFS = [
+  {id:'ul',        pts:10, label:'Юридические лица',                     test:c=>c.ctype==='ul'},
+  {id:'fl',        pts:10, label:'Физические лица (быт)',                test:c=>c.ctype==='fl'},
+  {id:'power30',   pts:10, label:'Разрешённая мощность ≥ 30 кВт',        test:c=>c.power!=null && c.power>=30},
+  {id:'bigloss',   pts:10, label:'Оценка недоучёта ≥ 3000 кВт·ч',        test:c=>c.lossKwh>=3000},
+  {id:'winterzero',pts:8,  label:'Есть нули в зимние месяцы',            test:c=>c.winterZeros>=1},
+  {id:'shift',     pts:8,  label:'Есть точка перелома на графике',       test:c=>c.shiftIdx!=null},
+  {id:'dup',       pts:6,  label:'Дубль номера ПУ в файле',              test:c=>!!c.dup},
+];
+let BOOSTS_ON = {};
+function setBoosts(on){ BOOSTS_ON = on || {}; }
+
+/* ---------- включение/исключение алгоритмов ----------
+   Отключённый признак не срабатывает вовсе и не гейтит остальные —
+   методика адаптируется под район (промзона / газ / электроотопление…). */
+let ALG_OFF = {};
+function setAlgOff(off){ ALG_OFF = off || {}; }
+
+function median(arr){
+  const a = arr.filter(v => v != null && isFinite(v)).slice().sort((x,y)=>x-y);
+  if(!a.length) return null;
+  const m = Math.floor(a.length/2);
+  return a.length % 2 ? a[m] : (a[m-1]+a[m])/2;
+}
+function mean(arr){
+  const a = arr.filter(v => v != null && isFinite(v));
+  return a.length ? a.reduce((s,v)=>s+v,0)/a.length : null;
+}
+function stdev(arr){
+  const a = arr.filter(v => v != null && isFinite(v));
+  if(a.length < 3) return null;
+  const m = mean(a);
+  return Math.sqrt(a.reduce((s,v)=>s+(v-m)**2,0)/a.length);
+}
+function pearson(x, y){
+  const idx = [];
+  for(let i=0;i<x.length;i++) if(x[i]!=null && y[i]!=null) idx.push(i);
+  if(idx.length < 6) return 0;
+  const xs = idx.map(i=>x[i]), ys = idx.map(i=>y[i]);
+  const mx = mean(xs), my = mean(ys);
+  let num=0, dx=0, dy=0;
+  for(let i=0;i<xs.length;i++){
+    num += (xs[i]-mx)*(ys[i]-my);
+    dx += (xs[i]-mx)**2; dy += (ys[i]-my)**2;
+  }
+  return (dx>0 && dy>0) ? num/Math.sqrt(dx*dy) : 0;
+}
+function fmt(n, digits){
+  if(n == null || !isFinite(n)) return '—';
+  return n.toLocaleString('ru-RU', {maximumFractionDigits: digits==null?0:digits});
+}
+function isWinter(ym){ return ym.m === 11 || ym.m === 0 || ym.m === 1; }
+function isSummer(ym){ return ym.m >= 5 && ym.m <= 7; }
+function ymLabel(ym){ return MONTHS_RU[ym.m] + '\u00A0' + String(ym.y).slice(2); }
+
+/* ---------- шапка: распознавание месяцев ---------- */
+function excelSerialToYM(n){
+  const d = new Date(Math.round((n - 25569) * 86400 * 1000));
+  return isNaN(d) ? null : {y: d.getUTCFullYear(), m: d.getUTCMonth()};
+}
+function parseMonthHeader(v){
+  if(v == null) return null;
+  if(v instanceof Date && !isNaN(v)) return {y:v.getFullYear(), m:v.getMonth(), hasYear:true};
+  if(typeof v === 'number'){
+    return (v > 20000 && v < 80000) ? {...excelSerialToYM(v), hasYear:true} : null;
+  }
+  const s = String(v).trim().toLowerCase();
+  if(!s) return null;
+  let m;
+  if((m = s.match(/^(\d{1,2})[.\-\/](\d{4})/)) && +m[1]>=1 && +m[1]<=12) return {y:+m[2], m:+m[1]-1, hasYear:true};
+  if((m = s.match(/^(\d{4})[.\-\/](\d{1,2})/)) && +m[2]>=1 && +m[2]<=12) return {y:+m[1], m:+m[2]-1, hasYear:true};
+  if((m = s.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})/)) && +m[2]>=1 && +m[2]<=12) return {y:+m[3], m:+m[2]-1, hasYear:true};
+  for(let mi=0; mi<12; mi++){
+    if(new RegExp('^'+MONTHS_FULL[mi], 'i').test(s) || s.startsWith(MONTHS_RU[mi])){
+      const ym = s.match(/(20\d{2}|\b\d{2}\b)/);
+      if(ym){ let y=+ym[1]; if(y<100) y+=2000; return {y, m:mi, hasYear:true}; }
+      return {y:null, m:mi, hasYear:false};
+    }
+  }
+  return null;
+}
+
+/* ---------- парсинг листа (массив массивов) ---------- */
+const SUPPLY_RX = /отпуск|головн|итог[а-я]*\s+по\s+тп|расход\s+тп|ввод\s+тп/i; // «головн» (головной учёт), а не «голов» — иначе ловились фамилии вроде Головихина
+const ID_RX = /^\d{6,18}$/;
+const CONT_RX = /^(столбец|column|unnamed)/i;
+
+function parseAOA(aoa, opts){
+  opts = opts || {};
+  const nowY = opts.nowY || new Date().getFullYear();
+  const nowM = opts.nowM != null ? opts.nowM : new Date().getMonth();
+  const notes = [];
+  if(!aoa || !aoa.length) return {error:'Файл пуст или не читается.'};
+
+  // 1. Строка шапки — максимум распознанных месяцев в первых 12 строках
+  let headerRow=-1, best=0, headerMap=null;
+  for(let r=0; r<Math.min(aoa.length,12); r++){
+    const map = (aoa[r]||[]).map(parseMonthHeader);
+    const cnt = map.filter(Boolean).length;
+    if(cnt > best){ best=cnt; headerRow=r; headerMap=map; }
+  }
+  if(best < 3) return {error:'Не нашёл в шапке колонки месяцев (минимум 3). Подходят заголовки «Январь», «янв 25», «01.2025» или даты Excel.'};
+
+  const header = (aoa[headerRow]||[]).map(v => v==null ? '' : String(v).trim());
+  const nCols = Math.max(header.length, ...aoa.slice(headerRow+1, headerRow+30).map(r=>(r||[]).length));
+
+  // именованные месячные колонки
+  let monthCols = [];
+  headerMap.forEach((ym,c)=>{ if(ym) monthCols.push({c, ym}); });
+  monthCols.sort((a,b)=>a.c-b.c);
+  const lastNamed = monthCols[monthCols.length-1];
+
+  // 1а. Продолжение «Столбец1…N» / пустые заголовки справа — следующие месяцы подряд
+  let cont = 0;
+  const dataProbe = aoa.slice(headerRow+1, headerRow+40);
+  for(let c=lastNamed.c+1; c<nCols; c++){
+    const h = header[c]||'';
+    if(!(h==='' || CONT_RX.test(h))) break;
+    const vals = dataProbe.map(r=>(r||[])[c]).filter(v=>v!=null && v!=='');
+    const numeric = vals.filter(v=>isFinite(typeof v==='string' ? parseFloat(v.replace(',','.')) : v)).length;
+    if(!vals.length || numeric/vals.length < 0.6) break;
+    cont++;
+    const prev = monthCols[monthCols.length-1].ym;
+    const nm = (prev.m+1)%12, ny = prev.hasYear ? prev.y + (prev.m===11?1:0) : null;
+    monthCols.push({c, ym:{y:ny, m:nm, hasYear:prev.hasYear}});
+  }
+  if(cont) notes.push(`Колонки «Столбец1…${cont}» распознал как продолжение месяцев после «${header[lastNamed.c]}».`);
+
+  // 1б. Годы, если в шапке их не было: серия заканчивается не позже текущего месяца
+  if(!monthCols[0].ym.hasYear){
+    const n = monthCols.length, m0 = monthCols[0].ym.m;
+    let y0 = nowY;
+    const endsOk = y => { const t = (y*12 + m0) + (n-1); return t <= nowY*12 + nowM; };
+    while(!endsOk(y0)) y0--;
+    monthCols.forEach((mc,i)=>{ mc.ym = {y: y0 + Math.floor((m0+i)/12), m:(m0+i)%12}; });
+    const a = monthCols[0].ym, b = monthCols[n-1].ym;
+    notes.push(`Годы в шапке не указаны — принял период ${MONTHS_RU[a.m]} ${a.y} — ${MONTHS_RU[b.m]} ${b.y} (последний месяц ряда не позже текущего). Если сдвинуто, скажите — метки поправлю, на расчёты это не влияет.`);
+  }
+  const months = monthCols.map(mc=>({y:mc.ym.y, m:mc.ym.m}));
+  const firstMonthCol = Math.min(...monthCols.map(x=>x.c));
+
+  // 2. Строки данных
+  const dataRows = aoa.slice(headerRow+1).filter(r => r && r.some(v=>v!=null && String(v).trim()!==''));
+  if(!dataRows.length) return {error:'Под шапкой нет строк с данными.'};
+
+  // 3. Колонка номера ПУ
+  let idCol=-1, idScore=-1;
+  for(let c=0; c<firstMonthCol; c++){
+    let score=0;
+    const h=(header[c]||'').toLowerCase();
+    if(/№|номер|завод|serial|\bпу\b/.test(h) && !/п\/п/.test(h)) score+=5;
+    if(/п\/п/.test(h)) score-=10;
+    for(const row of dataRows.slice(0,80)){
+      const v=row[c];
+      if(v!=null && ID_RX.test(String(v).trim().replace(/\.0+$/,''))) score += String(v).trim().length>=8 ? 2 : 0.5;
+    }
+    if(score>idScore){ idScore=score; idCol=c; }
+  }
+  if(idCol<0){ idCol=0; notes.push('Колонку номера ПУ определил как первую — проверьте.'); }
+
+  // 3а. Служебные колонки
+  let nameCol=-1, addrCol=-1, tpCol=-1, powerCol=-1, typeCol=-1, voltCol=-1;
+  for(let c=0; c<firstMonthCol; c++){
+    if(c===idCol) continue;
+    const h=(header[c]||'').toLowerCase();
+    if(powerCol<0 && /мощност/.test(h)) powerCol=c;
+    else if(voltCol<0 && /напряж/.test(h)) voltCol=c;
+    else if(typeCol<0 && /юр|физ|правов|катег.*потреб|тип\s*(потреб|абон|лиц)/.test(h)) typeCol=c;
+    else if(tpCol<0 && /^тп(?![а-яё])|подстанц|фидер|ктп/.test(h)) tpCol=c;
+    else if(nameCol<0 && /фио|абонент|потребител|наименован|владел/.test(h)) nameCol=c;
+    else if(addrCol<0 && /адрес|улиц|объект/.test(h)) addrCol=c;
+  }
+  // напряжение из файла: «0,22» / «220» → 0,22 кВ; «0,4» / «0,38» / «380» / «400» → 0,4 кВ
+  const parseVolt = vv => {
+    if(vv==null) return null;
+    const sv=String(vv).replace(',','.').replace(/\s/g,'').toLowerCase();
+    if(!sv) return null;
+    if(/^0?\.22|^0?\.23|^220/.test(sv)) return '0,22';
+    if(/^0?\.4|^0?\.38|^380|^400/.test(sv)) return '0,4';
+    return null;
+  };
+  if(nameCol<0 && addrCol<0){
+    for(let c=idCol+1; c<firstMonthCol; c++){
+      if(c===powerCol||c===tpCol||c===typeCol) continue;
+      const sample=dataRows.slice(0,30).map(r=>r[c]).filter(v=>v!=null && String(v).trim()!=='');
+      const texty=sample.filter(v=>isNaN(parseFloat(String(v).replace(',','.')))).length;
+      if(sample.length && texty/sample.length>0.6){ if(nameCol<0) nameCol=c; else if(addrCol<0) addrCol=c; }
+    }
+  }
+
+  // 4. Сбор ПУ и строк отпуска
+  const meters=[], supplyRows=[];
+  const toNum = v => {
+    if(v==null || v==='') return null;
+    if(typeof v==='string') v = parseFloat(v.replace(/\s|\u00A0/g,'').replace(',','.'));
+    return isFinite(v) ? v : null;
+  };
+  // \u0442\u0438\u043F \u043F\u043E\u0442\u0440\u0435\u0431\u0438\u0442\u0435\u043B\u044F: 'ul' (\u044E\u0440. \u043B\u0438\u0446\u043E) / 'fl' (\u0444\u0438\u0437. \u043B\u0438\u0446\u043E) / null (\u043D\u0435 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0451\u043D)
+  const parseCtype = v => {
+    if(v==null) return null;
+    const s=String(v).trim().toLowerCase();
+    if(!s) return null;
+    if(/\u044E\u0440|\u043E\u0440\u0433\u0430\u043D\u0438\u0437|\u043F\u0440\u0435\u0434\u043F\u0440\u0438\u044F\u0442|\u0431\u044E\u0434\u0436|\u0443\u0447\u0440\u0435\u0436\u0434|\u043A\u043E\u043C\u043C\u0435\u0440\u0447|\u0431\u0438\u0437\u043D\u0435\u0441/.test(s)) return 'ul';
+    if(/\u0444\u0438\u0437|\u0431\u044B\u0442|\u043D\u0430\u0441\u0435\u043B|\u0433\u0440\u0430\u0436\u0434|\u0447\u0430\u0441\u0442\u043D/.test(s)) return 'fl';
+    return null;
+  };
+  const UL_NAME_RX = /(^|[\s\u00AB"'(,;])(\u043E\u043E\u043E|\u043E\u0430\u043E|\u0437\u0430\u043E|\u043F\u0430\u043E|\u0430\u043E|\u043D\u0430\u043E|\u0438\u043F|\u0441\u043D\u0442|\u0442\u0441\u0436|\u0442\u0441\u043D|\u0434\u043D\u0442|\u0434\u043D\u043F|\u0433\u0441\u043A|\u043F\u0433\u043A|\u043A\u0444\u0445|\u0444\u0433\u0443\u043F|\u0444\u0433\u0431\u0443|\u0433\u0431\u0443|\u043C\u0431\u0443|\u043C\u0443\u043F|\u0433\u0443\u043F|\u043C\u0430\u0433\u0430\u0437\u0438\u043D|\u0448\u043A\u043E\u043B\u0430|\u0434\u0435\u0442\u0441\u043A|\u0431\u043E\u043B\u044C\u043D\u0438\u0446|\u043F\u043E\u043B\u0438\u043A\u043B\u0438\u043D|\u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0446|\u043A\u043E\u043E\u043F\u0435\u0440\u0430\u0442\u0438\u0432|\u0444\u0435\u0440\u043C|\u043F\u0435\u043A\u0430\u0440\u043D|\u0430\u0432\u0442\u043E\u0441\u0435\u0440\u0432\u0438\u0441|\u0441\u0442\u043E|\u0430\u0437\u0441|\u0431\u0430\u0437\u0430|\u0446\u0435\u0445|\u0437\u0430\u0432\u043E\u0434|\u0444\u0430\u0431\u0440\u0438\u043A)(?=[\s\u00BB"'),;.]|$)/i;
+  const FIO_RX = /^[\u0430-\u044F\u0451-]+\s+[\u0430-\u044F\u0451]\s*\.\s*[\u0430-\u044F\u0451]\s*\.?$|^[\u0430-\u044F\u0451-]+\s+[\u0430-\u044F\u0451-]+\s+[\u0430-\u044F\u0451-]+(?:\u043D\u0430|\u0438\u0447)$/i;
+  const inferCtype = name => {
+    const s=String(name||'').trim();
+    if(!s) return null;
+    if(UL_NAME_RX.test(s)) return 'ul';
+    if(FIO_RX.test(s)) return 'fl';
+    return null;
+  };
+  let ctypeFromName=0;
+  for(const row of dataRows){
+    const values = monthCols.map(({c})=>toNum(row[c]));
+    const textJoin = row.slice(0,firstMonthCol).map(v=>v==null?'':String(v)).join(' ');
+    // строка отпуска: есть маркер в тексте И в колонке № ПУ НЕ номер прибора —
+    // у строк отпуска там текстовая метка; иначе это абонент (защита от фамилий
+    // и адресов, случайно содержащих маркерные слова)
+    const idRaw = row[idCol]==null ? '' : String(row[idCol]).trim().replace(/\.0+$/,'');
+    if(SUPPLY_RX.test(textJoin) && !ID_RX.test(idRaw)){
+      supplyRows.push({label:textJoin.trim(), tp: tpCol>=0?String(row[tpCol]||'').trim():'', values});
+      continue;
+    }
+    const rawId = row[idCol];
+    if(rawId==null || String(rawId).trim()==='') continue;
+    if(values.every(v=>v==null)) continue;
+    const name = nameCol>=0?String(row[nameCol]??'').trim():'';
+    let ctype = typeCol>=0 ? parseCtype(row[typeCol]) : null;
+    if(ctype==null && name){ ctype = inferCtype(name); if(ctype) ctypeFromName++; }
+    meters.push({
+      id: String(rawId).trim().replace(/\.0+$/,''),
+      name,
+      addr: addrCol>=0?String(row[addrCol]??'').trim():'',
+      tp:   tpCol>=0?String(row[tpCol]??'').trim():'',
+      power: powerCol>=0?toNum(row[powerCol]):null,
+      voltage: voltCol>=0?parseVolt(row[voltCol]):null,
+      ctype,
+      values
+    });
+  }
+  if(!meters.length) return {error:'Не выделил ни одного ПУ — проверьте колонку с номерами приборов.'};
+  {
+    const ul=meters.filter(m=>m.ctype==='ul').length, fl=meters.filter(m=>m.ctype==='fl').length;
+    if(ul||fl){
+      let msg = 'Тип потребителя: юр. лиц — '+ul+', физ. лиц — '+fl+(meters.length-ul-fl?', не определён — '+(meters.length-ul-fl):'')+'.';
+      if(typeCol<0 && ctypeFromName) msg += ' Колонки «Тип (юр/физ)» в файле нет — '+ctypeFromName+' определил по названию абонента (ООО/ИП/ФИО и т.п.); для точности добавьте колонку.';
+      msg += ' Сравнение «с соседями» ведётся внутри своего типа, где таких ПУ достаточно (от 6).';
+      notes.push(msg);
+    }
+  }
+  if(voltCol>=0){
+    const nv=meters.filter(m=>m.voltage).length;
+    notes.push('Уровень напряжения взял из колонки файла ('+nv+' ПУ с указанным значением); там, где пусто, — по правилу: ≤10 кВт → 0,22 кВ, выше → 0,4 кВ.');
+  }
+
+  // 4а. Хвостовая колонка-«Итого»: последний месяц ≈ сумме остальных почти во всех строках
+  const lastIdx = months.length-1;
+  let totalHits=0, checked=0;
+  for(const m of meters){
+    const v=m.values;
+    if(v[lastIdx]==null) continue;
+    const rest = v.slice(0,lastIdx).reduce((s,x)=>s+(x||0),0);
+    if(rest>50){ checked++; if(Math.abs(v[lastIdx]-rest) <= Math.max(2, rest*0.02)) totalHits++; }
+  }
+  if(checked>=3 && totalHits/checked>=0.7){
+    for(const m of meters) m.values.pop();
+    for(const s of supplyRows) s.values.pop();
+    months.pop();
+    notes.push('Последнюю колонку распознал как «Итого» и исключил из помесячного ряда.');
+  }
+
+  // 4б. Дубли номеров
+  const seen={};
+  for(const m of meters){ seen[m.id]=(seen[m.id]||0)+1; }
+  const dups = Object.keys(seen).filter(k=>seen[k]>1);
+  if(dups.length){
+    let k={};
+    for(const m of meters){ k[m.id]=(k[m.id]||0)+1; if(seen[m.id]>1){ m.dup=k[m.id]; m.dupOf=seen[m.id]; } }
+    notes.push(`В файле дубли номеров: ${dups.join(', ')} — обе строки оставил, помечены как «дубль». Стоит выяснить, какая актуальна.`);
+  }
+
+  // 4в. Отрицательные значения → null + пометка (сторно/перерасчёт)
+  for(const m of meters){
+    let neg=0;
+    m.values = m.values.map(v=>{ if(v!=null && v<0){ neg++; return null; } return v; });
+    if(neg) m.negNote = `${neg} отриц. знач. (сторно/перерасчёт?) — исключены из расчёта`;
+  }
+
+  // 5. Показания vs расход
+  let mono=0, chk=0;
+  for(const m of meters){
+    const v=m.values.filter(x=>x!=null);
+    if(v.length<5) continue;
+    chk++;
+    let ok=0;
+    for(let i=1;i<v.length;i++) if(v[i] >= v[i-1]-0.001) ok++;
+    if(ok/(v.length-1)>=0.92 && v[v.length-1] > v[0]*1.2 && v[0] > 100) mono++;
+  }
+  let cumulative=false;
+  if(chk>=3 && mono/chk>=0.75){
+    cumulative=true;
+    const diff = s => { const d=[]; for(let i=1;i<s.length;i++){ const a=s[i-1],b=s[i]; d.push((a!=null&&b!=null)?Math.max(0,b-a):null); } return d; };
+    for(const m of meters) m.values=diff(m.values);
+    for(const s of supplyRows) s.values=diff(s.values);
+    months.shift();
+    notes.push('Похоже, в файле накопительные показания — перевёл в помесячный расход (разности).');
+  }
+
+  if(months.length<6) notes.push('Месяцев меньше шести — ступенчатые и сезонные признаки менее надёжны.');
+  return {meters, months, supplyRows, notes, cumulative};
+}
+
+/* ================= АЛГОРИТМЫ ВЫЯВЛЕНИЯ (v3) =================
+   Каждый возвращает {pts, detail, ...} либо null.
+   Калибровка v3 — по выборке подтверждённых случаев хищений (390 ПУ, 85 мес.):
+   один сильный паттерн (S1–S3, глубокая ступень) сам выводит в красную зону,
+   слабые признаки (S7, S8, S10, S12) поодиночке — нет.
+   Сравнение «до/после» дополнительно сверяется с динамикой группы, чтобы
+   не путать вмешательство с общим спадом (сезон, экономика). */
+
+// S1. «Спящий → пробуждение»: долгие нули с начала, затем устойчивое потребление
+function algSleeper(v, months){
+  const T=TUNE.sleeper;
+  let z=0;
+  while(z<v.length && (v[z]==null || v[z]<=EPS)) z++;
+  if(z<T.minZeros || z>v.length-4) return null;
+  const zeros = v.slice(0,z).filter(x=>x!=null && x<=EPS).length;
+  if(zeros < T.minZeros) return null;
+  const after = v.slice(z).filter(x=>x!=null);
+  const post = median(after);
+  if(post==null || post<T.minPost) return null;
+  const sustained = after.filter(x=>x>EPS).length/after.length;
+  if(sustained<0.7) return null;
+  const pts = Math.min(50, Math.round(18 + 1.5*zeros + (post>=300?10:post>=100?6:0)));
+  const loss = Math.round(post*zeros);
+  return {pts, loss, shiftIdx:z, base:post,
+    detail:`${zeros} мес. нулей с начала ряда, затем с ${ymLabel(months[z])} — устойчивые ~${fmt(post)} кВт·ч/мес. Действующий объект не «включается из ниоткуда»: до пробуждения он, скорее всего, потреблял мимо учёта. Оценка недоучёта ≈ ${fmt(loss)} кВт·ч.`};
+}
+
+// S2. «Рваный профиль»: нули вперемешку со всплесками — похоже на разовые контрольные съёмы
+function algRagged(v, months){
+  const T=TUNE.ragged;
+  const known = v.filter(x=>x!=null);
+  if(known.length<10) return null;
+  const zeros = known.filter(x=>x<=EPS).length;
+  const zShare = zeros/known.length;
+  if(zShare<0.2 || zShare>0.85) return null;
+  const pos = known.filter(x=>x>EPS);
+  const mp = median(pos);
+  if(mp==null || mean(known)<40) return null;
+  const mx = Math.max(...pos);
+  const spike = mx/mp;
+  if(spike<T.minSpike) return null;
+  let trans=0;
+  for(let i=1;i<v.length;i++){
+    const a=v[i-1], b=v[i];
+    if(a!=null && b!=null && ((a<=EPS)!==(b<=EPS))) trans++;
+  }
+  if(trans<T.minTrans) return null;
+  let wz=0;
+  v.forEach((x,i)=>{ if(x!=null&&x<=EPS&&isWinter(months[i])) wz++; });
+  const pts = Math.min(45, Math.round(24 + (zShare>=0.25&&zShare<=0.7?8:4) + Math.min(10,spike) + Math.min(7,trans) + Math.min(4,2*wz)));
+  const loss = Math.round(zeros*mp);
+  return {pts, loss, base:mp,
+    detail:`Профиль «рваный»: ${zeros} нулевых мес. чередуются со всплесками до ${fmt(mx)} кВт·ч (в ${fmt(spike,1)} раза выше типичного). Так выглядит учёт, который «оживает» только при контрольных съёмах, — остальное время энергия идёт мимо ПУ. Оценка недоучёта ≈ ${fmt(loss)} кВт·ч.`};
+}
+
+// Групповая поправка «до/после»: как просела сама группа вокруг той же точки.
+// Возвращает ratio группы (после/до) либо null, если посчитать нельзя.
+function groupStepRatio(gMed, t){
+  if(!gMed) return null;
+  const gb=median(gMed.slice(0,t)), ga=median(gMed.slice(t));
+  return (gb!=null && ga!=null && gb>=20) ? ga/gb : null;
+}
+
+// S3. Ступенчатое падение: расход упал и держится на низком уровне до конца ряда.
+// Устойчивость проверяется двумя путями: по доле месяцев ниже порога И по медианам
+// годовых блоков (второй путь не даёт сезонным пикам маскировать ступень).
+function algStepDrop(v, months, gMed, gCnt){
+  const T=TUNE.step;
+  const n=v.length;
+  const yearBlocksBelow = (t, thr) => { // все 12-мес. блоки после t ниже порога?
+    let all=true, cnt=0;
+    for(let y0=t; y0<n; y0+=12){
+      const seg=v.slice(y0,Math.min(n,y0+12)).filter(x=>x!=null);
+      if(seg.length<4) continue;
+      cnt++;
+      if(median(seg)>=thr) all=false;
+    }
+    return cnt>=1 && all;
+  };
+  let bestR=null;
+  for(let t=3; t<=n-3; t++){
+    const before=v.slice(0,t), after=v.slice(t);
+    const mb=median(before), ma=median(after);
+    if(mb==null||ma==null||mb<40) continue;
+    const aKnown=after.filter(x=>x!=null);
+    if(aKnown.length<3) continue;
+    const ratio=ma/mb;
+    if(ratio>T.rMax) continue; // калибровка: ступень мельче настроенного порога не считается
+    let ok=false;
+    if(ratio<=0.5){
+      ok = aKnown.filter(x=>x<mb*0.8).length/aKnown.length >= 0.75 || yearBlocksBelow(t, mb*0.8);
+    } else if(ratio<=0.65){
+      ok = aKnown.filter(x=>x<mb*0.8).length/aKnown.length >= 0.85 || yearBlocksBelow(t, mb*0.8);
+    } else if(ratio<=Math.max(0.8, T.rMax)){
+      // неглубокая ступень: только длинная и очень устойчивая
+      ok = aKnown.length>=12 && (aKnown.filter(x=>x<mb*0.9).length/aKnown.length >= 0.85 || yearBlocksBelow(t, mb*0.9));
+    }
+    if(!ok) continue;
+    const cand={t,mb,ma,ratio,after:aKnown.length};
+    // из почти одинаковых по глубине точек берём САМУЮ РАННЮЮ — она и есть начало ступени
+    if(!bestR || ratio<bestR.ratio*0.85) bestR=cand;
+  }
+  if(!bestR) return null;
+  const r=bestR.ratio;
+  let pts = r<=0.25?44 : r<=0.35?38 : r<=0.5?30 : r<=0.65?22 : 12;
+  if(r<=0.5 && bestR.after>=18) pts+=6;            // глубокая ступень держится 1,5+ года
+  if(r>0.65){                                       // неглубокая: вес растёт с выдержкой
+    if(bestR.after>=24) pts+=4;
+    if(bestR.after>=48) pts+=4;
+  }
+  // групповая поправка: если группа за ту же точку тоже просела — часть падения общая
+  let grpNote='';
+  const gr = (gCnt>=6) ? groupStepRatio(gMed, bestR.t) : null;
+  if(gr!=null && gr<=0.75){
+    pts=Math.max(6, Math.round(pts*0.6));
+    grpNote=` Но группа вокруг той же даты тоже просела до ${fmt(gr*100)}% — часть падения может быть общей (сезонность, экономика), балл снижен.`;
+  }
+  let loss=0;
+  for(let i=bestR.t;i<n;i++) if(v[i]!=null) loss+=Math.max(0,bestR.mb-v[i]);
+  loss=Math.round(loss);
+  return {pts, loss, shiftIdx:bestR.t, base:bestR.mb,
+    detail:`С ${ymLabel(months[bestR.t])} расход ступенью упал с ~${fmt(bestR.mb)} до ~${fmt(bestR.ma)} кВт·ч/мес (−${fmt((1-r)*100)}%) и не восстановился (${bestR.after} мес. на новом уровне). Классика вмешательства: магнит, шунт, обвод — либо объект обесточен/покинут (сверить со статусом договора). Оценка недоучёта ≈ ${fmt(loss)} кВт·ч.${grpNote}`};
+}
+
+// S3b. Провал с восстановлением: «яма» посреди ряда — воровали до проверки/доначисления
+function algValley(v, months){
+  const T=TUNE.valley;
+  const n=v.length;
+  let bestV=null;
+  for(let i=3;i<n-6;i++) for(let j=i+4;j<=Math.min(n-3,i+24);j++){
+    const inside=v.slice(i,j);
+    if(inside.filter(x=>x!=null).length<4) continue;
+    const mL=median(v.slice(0,i)), mR=median(v.slice(j));
+    if(mL==null||mR==null||mL<100||mR<100) continue;
+    const mi=median(inside), side=Math.min(mL,mR);
+    if(mi==null) continue;
+    const ratio=mi/side;
+    if(ratio<=T.rMax && (!bestV || ratio<bestV.ratio || (ratio===bestV.ratio && (j-i)>(bestV.j-bestV.i)))) bestV={i,j,mi,mL,side,ratio};
+  }
+  if(!bestV) return null;
+  const len=bestV.j-bestV.i;
+  const pts=Math.min(34, Math.round(16 + (1-bestV.ratio)*18 + (len>=12?4:0)));
+  let loss=0;
+  for(let k=bestV.i;k<bestV.j;k++) if(v[k]!=null) loss+=Math.max(0,bestV.mL-v[k]);
+  loss=Math.round(loss);
+  return {pts, loss, shiftIdx:bestV.i, endIdx:bestV.j, base:bestV.mL,
+    detail:`Провал ${ymLabel(months[bestV.i])} — ${ymLabel(months[bestV.j-1])} (${len} мес.): ~${fmt(bestV.mi)} кВт·ч/мес при ~${fmt(bestV.side)} по обе стороны (−${fmt((1-bestV.ratio)*100)}%), затем уровень восстановился. Типичная картина «вмешательство → контрольная проверка/доначисление». Недоучёт за провал ≈ ${fmt(loss)} кВт·ч (от уровня до провала).`};
+}
+
+// S4. Затухание: последние месяцы — доли собственной базы
+function algFade(v, months){
+  const T=TUNE.fade;
+  const n=v.length;
+  if(n<8) return null;
+  const early=median(v.slice(0,n-4)), late=median(v.slice(-4));
+  if(early==null||late==null||early<40) return null;
+  const r=late/early;
+  if(r>T.rMax) return null;
+  const pts = r<=0.15?14:8;
+  return {pts, detail:`Последние месяцы ~${fmt(late)} кВт·ч при собственной базе ~${fmt(early)} (${fmt(r*100)}%). Потребление «затухает» без явной сезонной причины.`};
+}
+
+// S5. Нули при живой группе
+function algZeroAlive(v, months, gMed){
+  const T=TUNE.zeroAlive;
+  const zi=[];
+  v.forEach((x,i)=>{ if(x!=null && x<=EPS && gMed[i]!=null && gMed[i]>=25) zi.push(i); });
+  if(zi.length<T.minZeros) return null;
+  const wz=zi.filter(i=>isWinter(months[i])).length;
+  return {pts:Math.min(14, Math.round(4+2*zi.length+2*wz)),
+    detail:`${zi.length} нулевых мес. (зимой — ${wz}) при живом потреблении соседей по группе. Ноль зимой на действующем объекте — почти всегда обвод либо брошенный объект.`};
+}
+
+// S6. Замороженные/неправдоподобно плоские показания
+function algFrozen(v){
+  const T=TUNE.frozen;
+  let run=1,bestRun=1,val=null;
+  for(let i=1;i<v.length;i++){
+    if(v[i]!=null && v[i]===v[i-1] && v[i]>EPS){ run++; if(run>bestRun){bestRun=run; val=v[i];} }
+    else run=1;
+  }
+  if(bestRun>=T.minRun) return {pts:Math.min(14,3*bestRun), detail:`«Замороженное» показание: ${bestRun} мес. подряд ровно ${fmt(val)} кВт·ч. Либо счётчик стоит, либо переписывают одну цифру.`};
+  const pos=v.filter(x=>x!=null&&x>EPS);
+  const m=mean(pos), sd=stdev(pos);
+  if(m!=null&&sd!=null&&pos.length>=8&&m>=30&&sd/m<=T.maxCV/100)
+    return {pts:11, detail:`Разброс аномально мал (CV=${fmt(sd/m*100,1)}%). Живое потребление так не выглядит — похоже на «рисованные» передачи.`};
+  return null;
+}
+
+// S7. Круглые числа
+function algRound(v){
+  const T=TUNE.round;
+  const pos=v.filter(x=>x!=null&&x>EPS);
+  if(pos.length<8) return null;
+  const r=pos.filter(x=>x%50===0).length/pos.length;
+  if(r<T.minShare) return null;
+  return {pts:6, weak:true, detail:`${fmt(r*100)}% значений кратны 50 — показания передаются «на глаз», без реального съёма. Повод для контрольного обхода.`};
+}
+
+// S8. Ниже соседей по группе (слабый)
+function algBelowPeers(v, gs){
+  const T=TUNE.peers;
+  if(gs.cnt<8||gs.groupMedian==null||gs.groupMedian<60) return null;
+  const m=mean(v);
+  if(m==null||m>=gs.groupMedian*T.maxFrac||(gs.p10!=null&&m>=gs.p10)) return null;
+  return {pts:8, weak:true, detail:`Средний расход ${fmt(m)} кВт·ч/мес — ниже 30% медианы группы (${fmt(gs.groupMedian)}). Само по себе — слабый признак (может быть малый/пустующий объект), но в связке с другими усиливает подозрение.`};
+}
+
+// S9. Против сезона (относительно группы)
+function algSeason(v, months, gWS){
+  if(gWS==null||gWS<1.05) return null;
+  const w=[],s=[];
+  months.forEach((ym,i)=>{ if(v[i]!=null){ if(isWinter(ym))w.push(v[i]); if(isSummer(ym))s.push(v[i]); }});
+  if(w.length<2||s.length<2) return null;
+  const ms=median(s);
+  if(ms==null||ms<40) return null;
+  const own=median(w)/ms;
+  if(own>TUNE.season.maxOwn*gWS) return null;
+  return {pts:10, detail:`Зима/лето здесь ${fmt(own,2)} против ${fmt(gWS,2)} по группе: у соседей зимой расход растёт, тут — проваливается. Типично для сезонного «прикручивания» учёта.`};
+}
+
+// S10. Мощность простаивает (слабый): подключение есть, расхода почти нет
+function algIdlePower(v, power){
+  const T=TUNE.idle;
+  if(power==null||power<10) return null;
+  const m=mean(v);
+  if(m==null) return null;
+  if(m<=T.maxAvg){
+    const nz=v.filter(x=>x!=null&&x>EPS).length;
+    return {pts:7, weak:true, detail:`Разрешённая мощность ${fmt(power)} кВт, а фактический расход ~${fmt(m,1)} кВт·ч/мес (${nz} активных мес.). Проверить, не запитан ли объект мимо ПУ и жив ли договор.`};
+  }
+  if(power>=30){
+    const cap=power*730; // теоретический потолок за месяц при полной загрузке
+    const thr = (power>=200?0.05 : power>=100?0.03 : 0.015) * (T.maxAvg/15);
+    if(m<cap*thr) return {pts:8, weak:true, detail:`Разрешённая мощность ${fmt(power)} кВт — это до ~${fmt(cap)} кВт·ч/мес, а через ПУ проходит ~${fmt(m)} (${fmt(m/cap*100,1)}% мощности). Для объекта, бравшего такую мощность, это мало: либо мощность «бумажная», либо часть нагрузки запитана мимо учёта.`};
+  }
+  return null;
+}
+
+// S11. Синхронность с небалансом ТП
+function algImbalance(v, imb, months){
+  if(!imb) return null;
+  const n=v.length;
+  const early=median(v.slice(0,Math.max(3,Math.floor(n/2))));
+  if(early==null||early<30) return null;
+  const deficit=v.map(x=>x==null?null:Math.max(0,early-x));
+  const r=pearson(deficit,imb);
+  const dSum=deficit.reduce((s,x)=>s+(x||0),0);
+  if(r<TUNE.imb.minCorr||dSum<early*2) return null;
+  return {pts:12, detail:`Провалы этого ПУ синхронны с ростом небаланса по вводу ТП (корреляция ${fmt(r,2)}). Недоучтённая энергия «всплывает» в потерях подстанции — сильный подтверждающий признак.`};
+}
+
+// S12. Разовый всплеск среди «мёртвого» ряда — похоже на доначисление/акт
+function algLoneSpike(v){
+  const known=v.filter(x=>x!=null);
+  if(known.length<10) return null;
+  const zeros=known.filter(x=>x<=EPS).length;
+  if(zeros/known.length<0.6) return null;
+  const pos=known.filter(x=>x>EPS);
+  const big=pos.filter(x=>x>=400), small=pos.filter(x=>x<400);
+  if(big.length<1||big.length>2||small.length>6) return null;
+  const s=big.reduce((a,b)=>a+b,0);
+  if(s<TUNE.lone.minSum) return null;
+  return {pts:12, weak:true, detail:`Ряд почти полностью нулевой, но есть разовый объём ${fmt(s)} кВт·ч. Похоже на доначисление по акту или съём накопленного при проверке — до и после объект для учёта «не существует». Поднять историю: что это был за объём и почему после него снова тишина.`};
+}
+
+// S13. Ступенчатый рост с низкой базы: долго «по чуть-чуть», потом резко в разы больше.
+// Зеркало S3: недоучёт был В НАЧАЛЕ ряда — до замены ПУ / проверки / пресечения.
+function algStepUp(v, months){
+  const n=v.length;
+  let best=null;
+  for(let t=6; t<=n-6; t++){
+    const pre=v.slice(0,t).filter(x=>x!=null), post=v.slice(t).filter(x=>x!=null);
+    if(pre.length<5||post.length<5) continue;
+    const mp=median(pre), mq=median(post);
+    if(mp==null||mq==null||mp<20||mq<200) continue; // нули с начала — это S1, не сюда
+    const jump=mq/mp;
+    if(jump<TUNE.stepup.minJump) continue;
+    if(post.filter(x=>x>mp*1.5).length/post.length < 0.8) continue;  // новый уровень устойчив
+    if(pre.filter(x=>x<mq*0.6).length/pre.length < 0.8) continue;    // старый был стабильно низким
+    if(!best || jump>best.jump) best={t,mp,mq,jump,preCnt:pre.length};
+  }
+  if(!best) return null;
+  // резкость перехода: медиана 4 мес. после точки против 4 мес. до неё
+  const w1=v.slice(Math.max(0,best.t-4),best.t).filter(x=>x!=null);
+  const w2=v.slice(best.t,best.t+4).filter(x=>x!=null);
+  const sharp=(w1.length>=2&&w2.length>=2&&median(w1)>0)?median(w2)/median(w1):null;
+  const isSharp = sharp!=null && sharp>=2;
+  let pts, weak=false;
+  if(isSharp) pts = best.jump>=8?28 : best.jump>=5?24 : best.jump>=3.5?18 : 14;
+  else if(best.jump>=8) pts=24;      // рост на порядок даже «плавно» — слишком много для роста бизнеса
+  else if(best.jump>=4) pts=20;
+  else { pts=12; weak=true; }        // плавный умеренный рост — бизнес мог просто вырасти
+  const loss=Math.round((best.mq-best.mp)*best.preCnt);
+  return {pts, weak, loss, shiftIdx:best.t, base:best.mq,
+    detail:`До ${ymLabel(months[best.t])} через ПУ шло ~${fmt(best.mp)} кВт·ч/мес, после — устойчивые ~${fmt(best.mq)} (рост в ${fmt(best.jump,1)} раза${isSharp?', скачком':', плавно'}). Объект, который «вдруг» стал потреблять в разы больше, чаще всего потреблял столько и раньше — мимо учёта. Сверить дату скачка с заменой ПУ/проверкой. Оценка недоучёта за период до скачка ≈ ${fmt(loss)} кВт·ч.`};
+}
+
+// S14. Многолетнее угасание: год за годом вниз без резкой ступени.
+// Ловит «аккуратное» хищение, растянутое по времени, — на длинных рядах (2,5+ года).
+function algSlowDecline(v, months, gMed, gCnt, stepPts){
+  const n=v.length;
+  if(n<30 || stepPts>=30) return null; // короткий ряд / резкую ступень уже взял S3
+  const yearsOf = series => {
+    const ys=[];
+    for(let y0=0; y0+6<=series.length; y0+=12){
+      const seg=series.slice(y0,Math.min(series.length,y0+12)).filter(x=>x!=null);
+      ys.push(seg.length>=6?median(seg):null);
+    }
+    return ys;
+  };
+  const years=yearsOf(v);
+  const idx=[]; years.forEach((x,i)=>{ if(x!=null) idx.push(i); });
+  if(idx.length<4) return null;
+  const yv=idx.map(i=>years[i]);
+  let peakI=0; yv.forEach((x,i)=>{ if(x>yv[peakI]) peakI=i; });
+  const peak=yv[peakI], last=yv[yv.length-1];
+  if(peak<100 || peakI>=yv.length-2) return null; // падение должно быть видно ≥2 лет
+  const r=last/peak;
+  if(r>TUNE.slow.rMax) return null;
+  let down=0, steps=0;
+  for(let i=peakI;i<yv.length-1;i++){ steps++; if(yv[i+1]<=yv[i]*1.1) down++; }
+  if(steps<2 || down/steps<0.7) return null;
+  let pts = r<=0.3?28 : r<=0.5?22 : 16;
+  let grpNote='';
+  if(gCnt>=6 && gMed){
+    const gy=yearsOf(gMed).filter(x=>x!=null);
+    if(gy.length>=3){
+      const gr=gy[gy.length-1]/Math.max(...gy);
+      if(gr<=0.75){
+        pts=Math.max(6, Math.round(pts*0.6));
+        grpNote=` Но группа за эти годы тоже просела до ${fmt(gr*100)}% — часть спада может быть общей, балл снижен.`;
+      }
+    }
+  }
+  const loss=Math.round((peak-last)*12);
+  return {pts, loss, base:peak,
+    detail:`Годовые уровни ползут вниз: с ~${fmt(peak)} кВт·ч/мес в пиковый год до ~${fmt(last)} в последний (−${fmt((1-r)*100)}%), без резкой ступени. Так выглядит «аккуратное» хищение, наращиваемое постепенно, — или медленное сворачивание деятельности (сверить с состоянием объекта). Только за последний год недоучёт ≈ ${fmt(loss)} кВт·ч от пикового уровня.${grpNote}`};
+}
+
+const ALG_META = {
+  sleeper:{code:'S1', title:'Спящий → пробуждение'},
+  ragged:{code:'S2', title:'Рваный профиль: нули со всплесками'},
+  step:{code:'S3', title:'Ступенчатое падение'},
+  valley:{code:'S3б', title:'Провал с восстановлением'},
+  fade:{code:'S4', title:'Затухание расхода'},
+  zeroAlive:{code:'S5', title:'Нули при живой группе'},
+  frozen:{code:'S6', title:'Замороженные показания'},
+  round:{code:'S7', title:'Круглые числа'},
+  peers:{code:'S8', title:'Ниже соседей по группе'},
+  season:{code:'S9', title:'Против сезона'},
+  idle:{code:'S10', title:'Мощность простаивает'},
+  imb:{code:'S11', title:'Синхронность с небалансом ТП'},
+  lone:{code:'S12', title:'Разовый всплеск в мёртвом ряду'},
+  stepup:{code:'S13', title:'Ступенчатый рост с низкой базы'},
+  slow:{code:'S14', title:'Многолетнее угасание'},
+};
+
+const CLS = { red:45, amber:20 };
+
+function analyze(data, tariff){
+  const {meters, months, supplyRows} = data;
+  const n = months.length;
+
+  // группы (по ТП, если колонка есть; иначе весь файл)
+  const groups={};
+  for(const m of meters){ const g=m.tp||'__all__'; (groups[g]=groups[g]||[]).push(m); }
+  const buildStats = arr => {
+    const medByMonth=months.map((_,i)=>median(arr.map(m=>m.values[i])));
+    const means=arr.map(m=>mean(m.values)).filter(x=>x!=null).sort((a,b)=>a-b);
+    const p10=means.length?means[Math.floor(means.length*0.1)]:null;
+    const w=[],s=[];
+    months.forEach((ym,i)=>{ const gm=medByMonth[i]; if(gm!=null){ if(isWinter(ym))w.push(gm); if(isSummer(ym))s.push(gm); }});
+    const wsRatio=(w.length>=2&&s.length>=2&&median(s)>0)?median(w)/median(s):null;
+    return {medByMonth, groupMedian:median(means), p10, wsRatio, cnt:arr.length};
+  };
+  const groupStats={};
+  for(const [g,arr] of Object.entries(groups)) groupStats[g]=buildStats(arr);
+  // подгруппы по типу потребителя (юр/физ): внутри ТП и по всему файлу.
+  // Групповые признаки (S5, S8, S9, поправки S3/S14) сравнивают ПУ со «своими»:
+  // юр — с юр, физ — с физ, если таких набирается от 6; иначе прежняя логика.
+  const typeStats={};
+  for(const [g,arr] of Object.entries(groups)){
+    for(const t of ['ul','fl']){
+      const sub=arr.filter(m=>m.ctype===t);
+      if(sub.length>=6) typeStats[g+'|'+t]=buildStats(sub);
+    }
+  }
+  const globalTypeStats={};
+  for(const t of ['ul','fl']){
+    const sub=meters.filter(m=>m.ctype===t);
+    if(sub.length>=6) globalTypeStats[t]=buildStats(sub);
+  }
+  // маленькие группы по ТП (< 6 ПУ) сравниваем со всем файлом
+  const globalStats = buildStats(meters);
+  let fallbackUsed=false, typeSplitUsed=false;
+  const effStats = m => {
+    const g=m.tp||'__all__';
+    const ts=m.ctype ? typeStats[g+'|'+m.ctype] : null;
+    if(ts){ typeSplitUsed=true; return ts; }
+    const gs=groupStats[g];
+    const small = gs.cnt<6 && meters.length!==gs.cnt;
+    if(small){
+      fallbackUsed=true;
+      const gt=m.ctype ? globalTypeStats[m.ctype] : null;
+      if(gt){ typeSplitUsed=true; return gt; }
+      return globalStats;
+    }
+    return gs;
+  };
+
+  // небаланс, если есть строки отпуска. НЕСКОЛЬКО строк отпуска одной группы
+  // (два и более тех. учёта: Т1 + Т2 …) суммируются в ОДИН ввод помесячно;
+  // месяц анализируется, только если данные есть по КАЖДОМУ вводу группы.
+  const imbalanceByGroup={};
+  const tpBalance=[];
+  const supplyByGroup={};
+  for(const s of supplyRows){
+    // сопоставляем строку отпуска с группой ПУ: точный ключ → без регистра →
+    // имя группы внутри label (берём длиннейшее, чтобы «ТП-1» не съел «ТП-10») →
+    // вся выборка (с предупреждением, если групп несколько)
+    let g=s.tp||'__all__', balNote=null;
+    if(!groups[g]){
+      const lk=String(s.label||'').toLowerCase(), gl=String(g).toLowerCase();
+      const keys=Object.keys(groups);
+      const hit=keys.find(k=>k.toLowerCase()===gl)
+        || keys.filter(k=>k!=='__all__' && lk.includes(k.toLowerCase()))
+             .sort((a,b)=>b.length-a.length)[0];
+      if(hit) g=hit;
+      else{
+        g='__all__';
+        if(keys.length>1 && !groups['__all__']) balNote='ТП строки отпуска не сопоставлен с ТП приборов — баланс этой строки считается по ВСЕЙ выборке ('+keys.length+' групп). Проверьте ячейку «ТП» в строке отпуска.';
+      }
+    }
+    // номера ПУ тех. учёта: любые 6–18-значные числа в тексте строки отпуска
+    const ids=(String(s.label||'').match(/\d{6,18}/g)||[]);
+    (supplyByGroup[g]=supplyByGroup[g]||{rows:[], note:null}).rows.push({label:s.label.trim(), ids, values:s.values});
+    if(balNote) supplyByGroup[g].note=balNote;
+  }
+  for(const g of Object.keys(supplyByGroup)){
+    const rows=supplyByGroup[g].rows;
+    // сумма вводов: месяц известен, только если известен у каждого ввода
+    const supVals=months.map((_,i)=>{
+      let sum=0;
+      for(const r of rows){ if(r.values[i]==null) return null; sum+=r.values[i]; }
+      return sum;
+    });
+    const arr=groups[g]||meters;
+    const sumBy=months.map((_,i)=>{ const vv=arr.map(m=>m.values[i]).filter(x=>x!=null); return vv.length?vv.reduce((a,b)=>a+b,0):null; });
+    const imb=months.map((_,i)=>(supVals[i]!=null&&sumBy[i]!=null)?supVals[i]-sumBy[i]:null);
+    imbalanceByGroup[g]=imb;
+    // агрегаты плашки — только по месяцам, где известны ОБЕ стороны (отпуск и ПУ),
+    // чтобы всегда выполнялось: отпуск − по ПУ = разница
+    let sup=0, useSum=0;
+    months.forEach((_,i)=>{ if(imb[i]!=null){ sup+=supVals[i]; useSum+=sumBy[i]; } });
+    const it=sup-useSum;
+    const allIds=[]; rows.forEach(r=>r.ids.forEach(id=>{ if(!allIds.includes(id)) allIds.push(id); }));
+    const label = rows.length===1 ? rows[0].label
+      : 'Отпуск в сеть '+(g==='__all__'?'':g+' ')+'— сумма '+rows.length+' вводов (тех. учёт)';
+    tpBalance.push({group:g==='__all__'?'вся выборка':g, key:g, note:supplyByGroup[g].note, label,
+      inputs:rows.map(r=>({label:r.label, ids:r.ids})), meterIds:allIds, inputCount:rows.length,
+      supply:sup, sumMeters:useSum, imbalance:it, pct:sup>0?it/sup*100:null,
+      series:imb, supplySeries:supVals, usefulSeries:sumBy});
+  }
+
+  const results = meters.map(m=>{
+    const g=m.tp||'__all__', gs=effStats(m), v=m.values;
+    const known=v.filter(x=>x!=null);
+    const total=known.reduce((a,b)=>a+b,0);
+    const isDead = known.length===0 || known.every(x=>x<=EPS);
+
+    const flags=[];
+    let shiftIdx=null, baseline=null, loss=0, lossSrc=null;
+    const add=(key,r)=>{ if(r){
+      const pf = TUNE[key] ? TUNE[key].ptsF : 1; // калибровка: вес признака
+      flags.push({...ALG_META[key], ...r, pts:Math.max(1,Math.round(r.pts*pf))});
+      if(r.shiftIdx!=null&&shiftIdx==null){shiftIdx=r.shiftIdx; baseline=r.base;}
+      if(r.loss && r.loss>loss){ loss=r.loss; lossSrc={key, base:r.base, shiftIdx:r.shiftIdx, endIdx:r.endIdx}; }
+    } };
+
+    if(!isDead){
+      const s1=ALG_OFF.sleeper?null:algSleeper(v,months);
+      add('sleeper',s1);
+      const s2=(s1||ALG_OFF.ragged)?null:algRagged(v,months);
+      add('ragged',s2);
+      const s3=ALG_OFF.step?null:algStepDrop(v,months,gs.medByMonth,gs.cnt);
+      add('step',s3);
+      if(!s1&&!s2&&(!s3||s3.pts<=22)&&!ALG_OFF.valley) add('valley',algValley(v,months));
+      if(!s1&&!s2&&!s3&&!ALG_OFF.fade) add('fade',algFade(v,months));
+      if(!s1&&!s2&&!ALG_OFF.stepup){ add('stepup',algStepUp(v,months)); }
+      if(!ALG_OFF.slow) add('slow',algSlowDecline(v,months,gs.medByMonth,gs.cnt,s3?s3.pts:0));
+      if(!s1&&!s2&&!s3&&!ALG_OFF.lone) add('lone',algLoneSpike(v));
+      if(!ALG_OFF.zeroAlive) add('zeroAlive',algZeroAlive(v,months,gs.medByMonth));
+      if(!ALG_OFF.frozen) add('frozen',algFrozen(v));
+      if(!ALG_OFF.round) add('round',algRound(v));
+      if(!ALG_OFF.peers) add('peers',algBelowPeers(v,gs));
+      if(!ALG_OFF.season) add('season',algSeason(v,months,gs.wsRatio));
+      if(!ALG_OFF.idle) add('idle',algIdlePower(v,m.power));
+      if(!ALG_OFF.imb) add('imb',algImbalance(v,imbalanceByGroup[g],months));
+    }
+
+    let score=Math.min(100,Math.round(flags.reduce((s,f)=>s+f.pts,0)));
+    if(flags.length && flags.every(f=>f.weak)) score=Math.min(score,15);
+    if(baseline==null) baseline=median(known.filter(x=>x>EPS));
+
+    let winterZeros=0;
+    v.forEach((x,i)=>{ if(x!=null&&x<=EPS&&isWinter(months[i])) winterZeros++; });
+    let lossR=Math.round(loss);
+
+    // помесячная оценка недоучёта (вкладка «Баланс»): строится в окне ТОГО
+    // алгоритма, который дал итоговую оценку lossKwh (S13/S1 — до точки перелома,
+    // S3 — после, S3б — внутри провала), и нормируется к lossKwh
+    let deficitSeries=null;
+    if(lossR>0){
+      let raw=null;
+      if(lossSrc && lossSrc.base>0 && lossSrc.shiftIdx!=null){
+        const lk=lossSrc.key, lb=lossSrc.base, lt=lossSrc.shiftIdx, le=lossSrc.endIdx;
+        const inWin=i=> lk==='valley' ? (i>=lt && (le==null||i<le))
+                     : lk==='step' ? i>=lt
+                     : (lk==='stepup'||lk==='sleeper') ? i<lt : true;
+        raw=v.map((x,i)=>(x!=null&&inWin(i))?Math.max(0,lb-x):0);
+      }
+      if(!raw && baseline!=null && baseline>0){
+        raw=v.map(x=>x!=null?Math.max(0,baseline-x):0);
+      }
+      if(raw){
+        const rs=raw.reduce((a,b)=>a+b,0);
+        if(rs>0){ const k=lossR/rs; deficitSeries=raw.map(x=>x*k); }
+      }
+    }
+
+    // потолок по разрешённой мощности (реестр диапазонов техприсоединения):
+    // максимально возможный объём месяца = верхняя граница диапазона × 730 ч;
+    // недоучёт месяца не может превышать этот объём минус оплаченное (факт по ПУ)
+    const band = powerBand(m.power, m.voltage);
+    let capClippedKwh = 0;
+    if(band && band.capKw>0 && lossR>0){
+      const capMonth = i => Math.max(0, band.capKw*HOURS_MONTH - (v[i]!=null?v[i]:0));
+      if(deficitSeries){
+        let clipped=0;
+        deficitSeries = deficitSeries.map((x,i)=>{
+          const c=Math.min(x, capMonth(i));
+          clipped += x-c;
+          return c;
+        });
+        if(clipped>0.5){
+          capClippedKwh = Math.round(clipped);
+          lossR = Math.round(deficitSeries.reduce((a,b)=>a+b,0));
+        }
+      } else {
+        // ряда нет — ограничиваем итог суммой потолков по известным месяцам
+        const capSum = v.reduce((a,x,i)=>a+(x!=null?capMonth(i):0),0);
+        if(lossR>capSum){ capClippedKwh = Math.round(lossR-capSum); lossR = Math.round(capSum); }
+      }
+    }
+
+    // бусты приоритета (чек-боксы в Методике): поднимают балл подходящих ПУ
+    const boosts=[];
+    if(!isDead){
+      const ctx={ctype:m.ctype, power:m.power, dup:m.dup, lossKwh:lossR, winterZeros, shiftIdx};
+      for(const b of BOOST_DEFS) if(BOOSTS_ON[b.id] && b.test(ctx)) boosts.push({id:b.id, label:b.label, pts:b.pts});
+    }
+    const boostPts=boosts.reduce((s,b)=>s+b.pts,0);
+    score=Math.min(100, score+boostPts);
+
+    const cls = isDead?'dead'
+      : MODE.zone==='loss' ? (lossR>=MODE.lossRed?'red' : lossR>=MODE.lossAmber?'amber' : 'green')
+      : score>=CLS.red?'red' : score>=CLS.amber?'amber' : 'green';
+
+    return {meter:m, flags, score, cls, shiftIdx, baseline, total:Math.round(total),
+      boosts, boostPts, deficitSeries, band, capClippedKwh,
+      lossKwh:lossR, lossRub:tariff?Math.round(lossR*tariff):null,
+      groupMedByMonth:gs.medByMonth};
+  });
+
+  results.sort((a,b)=>{
+    const o={red:0,amber:1,green:2,dead:3};
+    if(MODE.zone==='loss') return o[a.cls]-o[b.cls] || b.lossKwh-a.lossKwh || b.score-a.score;
+    return o[a.cls]-o[b.cls] || b.score-a.score || b.lossKwh-a.lossKwh;
+  });
+  const totals={
+    meters:meters.length,
+    red:results.filter(r=>r.cls==='red').length,
+    amber:results.filter(r=>r.cls==='amber').length,
+    dead:results.filter(r=>r.cls==='dead').length,
+    lossKwh:results.reduce((s,r)=>s+r.lossKwh,0),
+  };
+  totals.lossRub = tariff?Math.round(totals.lossKwh*tariff):null;
+  totals.boosted = results.filter(r=>r.boostPts>0).length;
+  return {results, months, groupStats, tpBalance, totals, groupFallback:fallbackUsed, typeSplit:typeSplitUsed};
+}
+
+if(typeof module!=='undefined'&&module.exports){
+  module.exports={parseAOA, analyze, median, mean, parseMonthHeader, ymLabel, fmt, MONTHS_RU, CLS, EPS, setTune, buildTune, TUNE_DEFS, setZoneMode, MODE, setBoosts, BOOST_DEFS, setAlgOff, powerBand, POWER_BANDS};
+}
+</script>
+<script>
+/* ================= ИНТЕРФЕЙС ================= */
+const S = { data:null, an:null, tariff:null, open:{}, tab:'rank', source:'', loadedAt:null,
+  balSel:{}, balGroup:0,
+  cal:{levels:{}, red:45, amber:20, boosts:{}, zone:'score', lossRed:5000, lossAmber:1000, balPct:10} };
+const $ = sel => document.querySelector(sel);
+const el = (tag, cls, html) => { const e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; };
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CLS_RU = {red:'проверка в приоритете', amber:'наблюдение', green:'норма', dead:'нулевой ряд'};
+
+/* ---------- калибровка: состояние и хранение ---------- */
+const CAL_KEY = 'pu_tp_calibration_v1';
+function defaultCal(){ return {levels:{}, red:45, amber:20, boosts:{}, algOff:{}, zone:'score', lossRed:5000, lossAmber:1000, balPct:10}; }
+function loadCal(){
+  try{
+    const raw = localStorage.getItem(CAL_KEY);
+    if(raw){
+      const c = JSON.parse(raw) || {};
+      const d = defaultCal();
+      return {
+        levels: c.levels||{},
+        red: isFinite(c.red)?c.red:d.red,
+        amber: isFinite(c.amber)?c.amber:d.amber,
+        boosts: c.boosts||{},
+        algOff: c.algOff||{},
+        zone: c.zone==='loss'?'loss':'score',
+        lossRed: (isFinite(c.lossRed)&&c.lossRed>0)?c.lossRed:d.lossRed,
+        lossAmber: (isFinite(c.lossAmber)&&c.lossAmber>0)?c.lossAmber:d.lossAmber,
+        balPct: (isFinite(c.balPct)&&c.balPct>=0&&c.balPct<=50)?c.balPct:d.balPct,
+      };
+    }
+  }catch(e){}
+  return defaultCal();
+}
+function saveCal(){ try{ localStorage.setItem(CAL_KEY, JSON.stringify(S.cal)); }catch(e){} }
+function calDirty(){
+  return S.cal.red!==45 || S.cal.amber!==20 || Object.values(S.cal.levels).some(v=>v) ||
+    Object.values(S.cal.boosts||{}).some(Boolean) || Object.values(S.cal.algOff||{}).some(Boolean);
+}
+function applyCal(){
+  setTune(S.cal.levels, {red:S.cal.red, amber:S.cal.amber});
+  setBoosts(S.cal.boosts);
+  setAlgOff(S.cal.algOff);
+  setZoneMode(S.cal.zone, S.cal.lossRed, S.cal.lossAmber);
+}
+function markCal(){ const d=document.getElementById('calDot'); if(d) d.hidden = !calDirty(); }
+
+/* ---------- загрузка ---------- */
+function boot(){
+  S.cal = loadCal();
+  applyCal();
+  bindUI();
+  renderTuner();
+  renderBooster();
+  syncZoneUI();
+  markCal();
+  bootDemo();
+}
+
+function syncZoneUI(){
+  document.querySelectorAll('#zoneSeg button').forEach(b=>b.classList.toggle('on', b.dataset.zone===S.cal.zone));
+  const thr=document.getElementById('rmthr');
+  if(thr) thr.hidden = S.cal.zone!=='loss';
+  const r=document.getElementById('lossRedInp'), a=document.getElementById('lossAmberInp');
+  if(r) r.value=S.cal.lossRed;
+  if(a) a.value=S.cal.lossAmber;
+}
+
+function bootDemo(){
+  try{
+    const parsed = parseAOA(EMBEDDED_MATRIX);
+    if(!parsed.error){
+      S.data = parsed; S.source = 'встроенный демо-файл'; S.loadedAt = null; S.open = {};
+      recompute();
+      return;
+    }
+  }catch(e){ console.error(e); }
+  $('#meta').textContent = 'Данные не загружены — перетащите файл выгрузки.';
+}
+
+function resetAll(){
+  S.data=null; S.an=null; S.open={}; S.source=''; S.loadedAt=null;
+  S.balSel={}; S.balGroup=0;
+  ['#kpi','#balance','#rank','#heat','#bal'].forEach(sel=>{ $(sel).innerHTML=''; });
+  $('#meta').innerHTML = 'Данные <b>сброшены</b> — загрузите новую выгрузку.';
+  const notes = $('#notes'); notes.innerHTML='';
+  const n = el('div','note ok','Данные очищены — рейтинг, карта и показатели пусты. Перетащите новый файл в область загрузки, и всё пересчитается с нуля. Либо <a href="#" id="loadDemo">верните встроенный демо-файл</a>.');
+  notes.append(n);
+  n.querySelector('#loadDemo').addEventListener('click', e=>{ e.preventDefault(); bootDemo(); });
+}
+
+function bindUI(){
+  const drop = $('#drop'), input = $('#file');
+  drop.addEventListener('click', ()=>input.click());
+  input.addEventListener('change', e=>{ if(e.target.files[0]) loadFile(e.target.files[0]); input.value=''; });
+  ;['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev, e=>{e.preventDefault(); drop.classList.add('hot');}));
+  ;['dragleave','drop'].forEach(ev=>drop.addEventListener(ev, e=>{e.preventDefault(); drop.classList.remove('hot');}));
+  drop.addEventListener('drop', e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
+
+  $('#btnTpl').addEventListener('click', downloadTemplate);
+  $('#btnReset').addEventListener('click', resetAll);
+  $('#btnCsv').addEventListener('click', exportCSV);
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click', ()=>{
+    S.tab = t.dataset.tab;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on', x===t));
+    document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('show', p.id==='pane-'+S.tab));
+  }));
+
+  // переключатель зон рейтинга (по риску / по объёму недоучёта)
+  document.querySelectorAll('#zoneSeg button').forEach(b=>b.addEventListener('click', ()=>{
+    S.cal.zone = b.dataset.zone==='loss' ? 'loss' : 'score';
+    syncZoneUI();
+    saveCal(); applyCal();
+    if(S.data) recompute(true);
+  }));
+  const thrBind = (id, key) => {
+    document.getElementById(id).addEventListener('change', e=>{
+      const v = parseInt(String(e.target.value).replace(/[\s ]/g,''),10);
+      if(isFinite(v) && v>0){
+        if(key==='lossRed'){ S.cal.lossRed=v; if(S.cal.lossAmber>v) S.cal.lossAmber=v; }
+        else S.cal.lossAmber=Math.min(v, S.cal.lossRed);
+      }
+      syncZoneUI();
+      saveCal(); applyCal();
+      if(S.data) recompute(true);
+    });
+  };
+  thrBind('lossRedInp','lossRed');
+  thrBind('lossAmberInp','lossAmber');
+}
+
+/* ---------- бусты приоритета (чек-боксы) ---------- */
+function renderBooster(){
+  const host=document.getElementById('booster');
+  if(!host) return;
+  host.innerHTML='';
+  const box=el('div','boostbox');
+  BOOST_DEFS.forEach(b=>{
+    const lab=el('label','bopt'+(S.cal.boosts[b.id]?' onb':''));
+    const cb=document.createElement('input');
+    cb.type='checkbox';
+    cb.checked=!!S.cal.boosts[b.id];
+    cb.addEventListener('change', ()=>{
+      S.cal.boosts[b.id]=cb.checked;
+      lab.classList.toggle('onb', cb.checked);
+      tuneChanged();
+    });
+    lab.append(cb, document.createTextNode(b.label), el('span','pts','+'+b.pts+' б.'));
+    box.append(lab);
+  });
+  host.append(box);
+}
+
+function loadFile(f){
+  const err = m => { $('#notes').innerHTML=''; $('#notes').append(note(m,'bad')); };
+  if(typeof XLSX === 'undefined'){
+    err('Библиотека чтения Excel не загрузилась (нужен интернет при первом открытии страницы). Встроенные данные шаблона при этом работают.');
+    return;
+  }
+  const isCsv = /\.(csv|txt)$/i.test(f.name);
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const wb = isCsv ? XLSX.read(e.target.result, {type:'string'}) : XLSX.read(e.target.result, {type:'array', cellDates:true});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const aoa = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+      const parsed = parseAOA(aoa);
+      if(parsed.error){ err('Файл «'+esc(f.name)+'»: '+parsed.error); return; }
+      S.data = parsed; S.source = f.name; S.open = {}; S.loadedAt = new Date();
+      recompute();
+    }catch(ex){ err('Не смог прочитать «'+esc(f.name)+'»: '+ex.message); }
+  };
+  if(isCsv) reader.readAsText(f, 'utf-8'); else reader.readAsArrayBuffer(f);
+}
+
+function recompute(keepOpen){
+  if(!S.data) return;
+  if(!keepOpen){ S.open = {}; S.balSel = {}; S.balGroup = 0; }
+  S.an = analyze(S.data, S.tariff);
+  renderAll();
+}
+
+/* ---------- отрисовка ---------- */
+function note(text, kind){ return el('div','note '+(kind||''), esc(text)); }
+
+function renderAll(){
+  const {months} = S.data, an = S.an;
+  const per = ymLabel(months[0]) + ' — ' + ymLabel(months[months.length-1]);
+  const stamp = S.loadedAt ? ' · загружен <b>'+S.loadedAt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</b>' : '';
+  $('#meta').innerHTML = 'Источник: <b>'+esc(S.source)+'</b> · период <b>'+per+'</b> · месяцев: <b>'+months.length+'</b> · ПУ: <b>'+an.totals.meters+'</b>'+stamp;
+
+  const notes = $('#notes'); notes.innerHTML='';
+  if(S.loadedAt) notes.append(note('Загружен файл «'+S.source+'»: '+an.totals.meters+' ПУ, '+months.length+' мес. ('+per+'). Прошлые данные полностью замещены — весь рейтинг пересчитан по новому файлу. Кнопка «Сбросить данные» очищает экран.','ok'));
+  (S.data.notes||[]).forEach(n=>notes.append(note(n)));
+  if(an.groupFallback) notes.append(note('Группы по ТП маленькие (меньше 6 ПУ) — сравнение «с соседями» для них веду по всему файлу, а не внутри ТП.'));
+  if(an.typeSplit) notes.append(note('Юр/физ лица учтены в групповых признаках: сравнение «с соседями» ведётся внутри своего типа потребителя (там, где таких ПУ от 6).'));
+  if(S.cal.zone==='loss') notes.append(note('Зоны рейтинга построены по предполагаемому ОБЪЁМУ недоучёта: красная ≥ '+fmt(S.cal.lossRed)+' кВт·ч, жёлтая ≥ '+fmt(S.cal.lossAmber)+' кВт·ч. Балл риска показан справочно; переключатель — над таблицей рейтинга.'));
+  {
+    const actB = BOOST_DEFS.filter(b=>S.cal.boosts[b.id]);
+    if(actB.length) notes.append(note('Включены бусты приоритета: '+actB.map(b=>b.label+' (+'+b.pts+')').join('; ')+'. Надбавку получили '+an.totals.boosted+' ПУ — они подняты в рейтинге (фиолетовый чип «+баллы»).'));
+  }
+  {
+    const offCodes = TUNE_ORDER.filter(k=>S.cal.algOff[k]).map(k=>ALG_META[k].code);
+    if(offCodes.length) notes.append(note('Отключены признаки: '+offCodes.join(', ')+' — в анализе не участвуют (галочки во вкладке «Методика проверки» → «Калибровка»).'));
+  }
+  if(calDirty()) notes.append(note('Калибровка чувствительности изменена (вкладка «Методика проверки» → «Калибровка»): пороги зон риска — красная ≥'+CLS.red+', жёлтая ≥'+CLS.amber+'. Рейтинг рассчитан с этими настройками; «Стандарт v3» возвращает заводские.'));
+
+  // KPI
+  const t = an.totals;
+  const kpi = $('#kpi'); kpi.innerHTML='';
+  const card = (val, lab, cls) => { const c=el('div','kpi '+(cls||'')); c.append(el('div','kv',val), el('div','kl',lab)); return c; };
+  kpi.append(
+    card(fmt(t.meters),'ПУ в выборке'),
+    card(fmt(t.red),'красная зона','k-red'),
+    card(fmt(t.amber),'наблюдение','k-amber'),
+    card(fmt(t.dead),'нулевой ряд','k-dead'),
+    card('≈ '+fmt(t.lossKwh)+' кВт·ч','оценка недоучёта','k-loss'),
+  );
+  if(t.lossRub!=null) kpi.append(card('≈ '+fmt(t.lossRub)+' ₽','по тарифу '+fmt(S.tariff,2)+' ₽/кВт·ч','k-loss'));
+
+  // Баланс ТП
+  const bal = $('#balance'); bal.innerHTML='';
+  if(an.tpBalance.length){
+    an.tpBalance.forEach(b=>{
+      const badCls = b.pct==null ? 'mut' : b.pct>12 ? 'bad' : b.pct>7 ? 'warn' : 'ok';
+      bal.append(el('div','balrow',
+        '<span class="btag '+badCls+'">небаланс '+(b.pct!=null?fmt(b.pct,1)+'%':'—')+'</span>'+
+        '<b>'+esc(b.label)+'</b>'+
+        (b.meterIds&&b.meterIds.length?' <span class="mut">· ПУ ввода: '+b.meterIds.map(esc).join(', ')+'</span>':'')+
+        ' · отпуск в сеть <b class="bv bv-sup">'+fmt(b.supply)+' кВт·ч</b>'+
+        ' · полезный отпуск <b class="bv bv-use">'+fmt(b.sumMeters)+' кВт·ч</b>'+
+        ' · небаланс <b class="bv bv-imb">'+fmt(b.imbalance)+' кВт·ч</b>'));
+    });
+  } else {
+    bal.append(el('div','balrow mut','Строка «Отпуск в сеть …» в файле не найдена — небаланс ТП не считается. Добавьте её в шаблон (см. вкладку «Методика»), и появится сверка с вводом подстанции и алгоритм S11.'));
+  }
+
+  renderRank();
+  renderHeat();
+  renderBalance();
+  renderAlgs();
+}
+
+function sparkSVG(v, shiftIdx, w, h){
+  w=w||130; h=h||30;
+  const known = v.filter(x=>x!=null);
+  if(!known.length) return '<svg width="'+w+'" height="'+h+'"></svg>';
+  const mx = Math.max(...known, 1);
+  const X = i => 2 + i*(w-4)/Math.max(1,v.length-1);
+  const Y = x => h-2 - (x/mx)*(h-6);
+  let d='', pen=false;
+  v.forEach((x,i)=>{
+    if(x==null){ pen=false; return; }
+    d += (pen?'L':'M') + X(i).toFixed(1) + ' ' + Y(x).toFixed(1) + ' ';
+    pen=true;
+  });
+  let marks='';
+  v.forEach((x,i)=>{ if(x!=null&&x<=EPS) marks += '<circle cx="'+X(i).toFixed(1)+'" cy="'+(h-3)+'" r="1.3" class="spz"/>'; });
+  const sh = shiftIdx!=null ? '<line x1="'+X(shiftIdx).toFixed(1)+'" y1="2" x2="'+X(shiftIdx).toFixed(1)+'" y2="'+(h-2)+'" class="spsh"/>' : '';
+  return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'">'+sh+'<path d="'+d+'" class="spl"/>'+marks+'</svg>';
+}
+
+function renderRank(){
+  const body = $('#rank'); body.innerHTML='';
+  const months = S.data.months;
+  S.an.results.forEach((r,idx)=>{
+    const m = r.meter;
+    const row = el('div','row '+r.cls+(S.open[m.id+'#'+(m.dup||0)]?' openrow':''));
+    row.dataset.key = m.id+'#'+(m.dup||0);
+    const flagChips = r.flags.map(f=>'<span class="chip'+(f.weak?' weakchip':'')+'" title="'+esc(f.title)+'">'+f.code+'</span>').join('')+
+      (r.boostPts?'<span class="chip boostchip" title="буст приоритета: '+esc(r.boosts.map(b=>b.label).join('; '))+'">+'+r.boostPts+'</span>':'');
+    row.innerHTML =
+      '<div class="c-rk">'+(idx+1)+'</div>'+
+      '<div class="c-id"><span class="dot '+r.cls+'"></span><span class="mono">'+esc(m.id)+'</span>'+
+        (m.ctype?'<span class="chip typechip" title="тип потребителя">'+(m.ctype==='ul'?'юр':'физ')+'</span>':'')+
+        (m.dup?'<span class="chip dupchip" title="в файле '+m.dupOf+' строки с этим номером">дубль '+m.dup+'/'+m.dupOf+'</span>':'')+
+        (m.negNote?'<span class="chip dupchip" title="'+esc(m.negNote)+'">сторно</span>':'')+
+        ((m.name||m.addr)?'<div class="sub">'+esc([m.name,m.addr].filter(Boolean).join(' · '))+'</div>':'')+
+      '</div>'+
+      '<div class="c-pw mono">'+(m.power!=null?fmt(m.power):'—')+'</div>'+
+      '<div class="c-avg mono">'+fmt(mean(m.values))+'</div>'+
+      '<div class="c-sp">'+sparkSVG(m.values, r.shiftIdx)+'</div>'+
+      '<div class="c-sc"><div class="bar"><i style="width:'+r.score+'%"></i></div><span class="mono">'+r.score+'</span></div>'+
+      '<div class="c-fl">'+(flagChips||'<span class="mut">—</span>')+'</div>';
+    row.addEventListener('click', ()=>{
+      const k = row.dataset.key;
+      S.open[k] = !S.open[k];
+      renderRank();
+    });
+    body.append(row);
+    if(S.open[row.dataset.key]) body.append(detailPanel(r, months));
+  });
+}
+
+function gaugeSVG(score){
+  const a0=-180, a1=0;
+  const ang = a0 + (a1-a0)*Math.min(100,Math.max(0,score))/100;
+  const arc = (from,to,r,cls)=>{
+    const p = a => [100+r*Math.cos(a*Math.PI/180), 92+r*Math.sin(a*Math.PI/180)];
+    const A=p(a0+(a1-a0)*from/100), B=p(a0+(a1-a0)*to/100);
+    return '<path d="M'+A[0].toFixed(1)+' '+A[1].toFixed(1)+' A '+r+' '+r+' 0 0 1 '+B[0].toFixed(1)+' '+B[1].toFixed(1)+'" class="'+cls+'"/>';
+  };
+  let ticks='';
+  for(let s=0;s<=100;s+=10){
+    const a=(a0+(a1-a0)*s/100)*Math.PI/180;
+    const r1=64, r2=s%50===0?54:58;
+    ticks+='<line x1="'+(100+r1*Math.cos(a)).toFixed(1)+'" y1="'+(92+r1*Math.sin(a)).toFixed(1)+'" x2="'+(100+r2*Math.cos(a)).toFixed(1)+'" y2="'+(92+r2*Math.sin(a)).toFixed(1)+'" class="gt"/>';
+  }
+  const na=ang*Math.PI/180;
+  return '<svg class="gauge" viewBox="0 0 200 108">'+
+    '<path d="M14 100 a86 86 0 0 1 172 0 l-14 0 a72 72 0 0 0 -144 0 z" class="gface"/>'+
+    arc(0,20,68,'garc g-ok')+arc(20,45,68,'garc g-warn')+arc(45,100,68,'garc g-bad')+ticks+
+    '<text x="30" y="88" class="gnum">0</text><text x="100" y="34" class="gnum">50</text><text x="170" y="88" class="gnum">100</text>'+
+    '<text x="100" y="66" class="glabel">РИСК</text>'+
+    '<line x1="100" y1="92" x2="'+(100+52*Math.cos(na)).toFixed(1)+'" y2="'+(92+52*Math.sin(na)).toFixed(1)+'" class="gneedle"/>'+
+    '<circle cx="100" cy="92" r="5" class="gpivot"/>'+
+    '<text x="100" y="104" class="gscore">'+score+'</text>'+
+  '</svg>';
+}
+
+function chartSVG(r, months){
+  const v = r.meter.values, g = r.groupMedByMonth;
+  const W=760, H=250, L=52, R=12, T=14, B=40;
+  const known = v.filter(x=>x!=null).concat(r.baseline!=null?[r.baseline]:[]);
+  const mx = Math.max(...known, 10)*1.08;
+  const X = i => L + i*(W-L-R)/Math.max(1,v.length-1);
+  const Y = x => T + (H-T-B)*(1 - x/mx);
+  let grid='', yl='';
+  for(let k=0;k<=4;k++){
+    const val = mx*k/4, y=Y(val);
+    grid+='<line x1="'+L+'" y1="'+y.toFixed(1)+'" x2="'+(W-R)+'" y2="'+y.toFixed(1)+'" class="cgrid"/>';
+    yl+='<text x="'+(L-6)+'" y="'+(y+4).toFixed(1)+'" class="cyl">'+fmt(val)+'</text>';
+  }
+  const step = Math.ceil(months.length/9);
+  let xl='';
+  months.forEach((ym,i)=>{ if(i%step===0||i===months.length-1) xl+='<text x="'+X(i).toFixed(1)+'" y="'+(H-B+16)+'" class="cxl">'+ymLabel(ym)+'</text>'; });
+  const path = arr => { let d='',pen=false; arr.forEach((x,i)=>{ if(x==null){pen=false;return;} d+=(pen?'L':'M')+X(i).toFixed(1)+' '+Y(x).toFixed(1)+' '; pen=true; }); return d; };
+  let dots='';
+  v.forEach((x,i)=>{ if(x!=null) dots+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(x).toFixed(1)+'" r="2.4" class="cdot'+(x<=EPS?' czero':'')+'"><title>'+ymLabel(months[i])+': '+fmt(x,1)+' кВт·ч</title></circle>'; });
+  const base = r.baseline!=null ? '<line x1="'+L+'" y1="'+Y(r.baseline).toFixed(1)+'" x2="'+(W-R)+'" y2="'+Y(r.baseline).toFixed(1)+'" class="cbase"/><text x="'+(W-R)+'" y="'+(Y(r.baseline)-5).toFixed(1)+'" class="cbl">база ~'+fmt(r.baseline)+'</text>' : '';
+  const shift = r.shiftIdx!=null ? '<line x1="'+X(r.shiftIdx).toFixed(1)+'" y1="'+T+'" x2="'+X(r.shiftIdx).toFixed(1)+'" y2="'+(H-B)+'" class="cshift"/>' : '';
+  const grp = g&&g.some(x=>x!=null&&x>0) ? '<path d="'+path(g)+'" class="cgroup"/>' : '';
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'">'+grid+yl+xl+grp+shift+base+'<path d="'+path(v)+'" class="cline"/>'+dots+'</svg>'+
+    '<div class="legend"><span><i class="lg l1"></i>расход ПУ</span>'+(grp?'<span><i class="lg l2"></i>медиана группы</span>':'')+(base?'<span><i class="lg l3"></i>база</span>':'')+(shift?'<span><i class="lg l4"></i>точка перелома</span>':'')+'</div>';
+}
+
+const CHECK = {
+  common:['Осмотр пломб: госповерка, сбытовая/сетевая, антимагнитная (сработал ли индикатор)','Осмотр ввода от опоры до ПУ: отводы, скрутки, набросы, следы подключения до прибора','Сверка токоизмерительными клещами: ток на вводе против мгновенной мощности на дисплее ПУ под включённой нагрузкой','Фото- и видеофиксация; при подтверждении — акт о неучтённом потреблении (ПП РФ № 442)'],
+  S1:['Поднять историю ПУ: дата установки/замены, акты допуска — было ли что-то в период нулей','Сверить месяц «пробуждения» с заменой прибора, проверкой или подключением АСКУЭ'],
+  S2:['Сопоставить месяцы всплесков с журналом контрольных обходов — совпадают ли','Контрольный съём показаний сейчас и повторный через 7–10 дней'],
+  S3:['Проверка на магнит/шунт, состояние счётного механизма и индикатора нагрузки','Сверить статус договора: не расторгнут ли, не обесточен ли объект официально'],
+  'S3б':['Поднять акты и доначисления за период провала — если их не было, готовить расчёт за период'],
+  S4:['Уточнить статус объекта (проживание, аренда, отключение) перед выездом'],
+  S12:['Найти документ-основание разового объёма (акт, доначисление) и объяснение тишины после него'],
+  S13:['Поднять историю ПУ: дата замены прибора/проверки — совпадает ли с точкой скачка','Запросить акты допуска и доначислений за период до скачка: был ли оформлен недоучёт','Если скачок совпал с заменой ПУ или пресечением — готовить расчёт за период «до»'],
+  S14:['Сверить с состоянием объекта: не сворачивалась ли деятельность (аренда, сезонность, простой)','Инструментальная сверка клещами под рабочей нагрузкой','Журнал событий электронного ПУ: вскрытия крышки, магнитное поле, перерывы питания'],
+  dead:['Обход: запитан ли объект физически, есть ли признаки проживания/деятельности','Сверка статуса договора и показаний на дисплее ПУ','Если объект живой — проверка на бездоговорное потребление'],
+  weak:['Включить в маршрут планового обхода, контрольный съём показаний'],
+};
+
+function detailPanel(r, months){
+  const m=r.meter;
+  const box = el('div','detail '+r.cls);
+  const facts = [
+    ['Класс', CLS_RU[r.cls]],
+    ['Тип потребителя', m.ctype==='ul'?'юр. лицо':m.ctype==='fl'?'физ. лицо':'—'],
+    ['Суммарно за период', fmt(r.total)+' кВт·ч'],
+    ['База (типичный месяц)', r.baseline!=null?fmt(r.baseline)+' кВт·ч':'—'],
+    ['Оценка недоучёта', r.lossKwh?('≈ '+fmt(r.lossKwh)+' кВт·ч'+(r.lossRub!=null?' · ≈ '+fmt(r.lossRub)+' ₽':'')):'—'],
+    ['Разрешённая мощность', m.power!=null?fmt(m.power)+' кВт':'—'],
+  ];
+  if(r.band){
+    facts.push(['Напряжение / диапазон', r.band.u+' кВ'+(r.band.explicit?' (из файла)':'')+' · '+r.band.label]);
+    facts.push(['Потолок объёма ('+fmt(r.band.capKw)+' кВт)', '≈ '+fmt(r.band.capKw*730)+' кВт·ч/мес']);
+  }
+  if(r.capClippedKwh) facts.push(['Срезано потолком мощности', '−'+fmt(r.capClippedKwh)+' кВт·ч']);
+  if(r.boostPts) facts.push(['Буст приоритета', '+'+r.boostPts+' б.']);
+  const flagsHtml = (r.flags.length
+    ? r.flags.map(f=>'<div class="fl"><div class="flh"><span class="chip'+(f.weak?' weakchip':'')+'">'+f.code+'</span> '+esc(f.title)+' <span class="pts">+'+f.pts+'</span></div><div class="fld">'+esc(f.detail)+'</div></div>').join('')
+    : '<div class="mut">Признаков вмешательства не найдено'+(r.cls==='dead'?' — но ряд полностью нулевой, см. чек-лист.':'.')+'</div>')+
+    (r.boosts&&r.boosts.length
+      ? '<div class="fl"><div class="flh"><span class="chip boostchip">Буст</span> Приоритет проверки (чек-боксы в Методике) <span class="pts">+'+r.boostPts+'</span></div><div class="fld">'+esc(r.boosts.map(b=>b.label+' (+'+b.pts+')').join(' · '))+' — надбавка к баллам, не признак нарушения.</div></div>'
+      : '');
+  let checks = [];
+  if(r.cls==='dead') checks = CHECK.dead;
+  else if(r.cls!=='green'){
+    checks = [...CHECK.common];
+    r.flags.forEach(f=>{ (CHECK[f.code]||[]).forEach(x=>{ if(!checks.includes(x)) checks.push(x); }); });
+  } else if(r.flags.length) checks = CHECK.weak;
+  const checksHtml = checks.length ? '<div class="dh">Чек-лист проверки</div><ol class="cl">'+checks.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ol>' : '';
+  box.innerHTML =
+    '<div class="dleft">'+gaugeSVG(r.score)+
+      '<table class="facts">'+facts.map(f=>'<tr><td>'+f[0]+'</td><td class="mono">'+f[1]+'</td></tr>').join('')+'</table>'+
+      (m.negNote?'<div class="note bad" style="margin-top:8px">'+esc(m.negNote)+'</div>':'')+
+      (r.capClippedKwh?'<div class="note" style="margin-top:8px">Оценка недоучёта ограничена физическим потолком диапазона мощности ('+esc(r.band.label)+', '+esc(r.band.sip)+', '+r.band.u+' кВ): максимально возможный объём '+fmt(r.band.capKw*730)+' кВт·ч/мес минус оплаченное. Срезано '+fmt(r.capClippedKwh)+' кВт·ч.</div>':'')+
+    '</div>'+
+    '<div class="dright">'+chartSVG(r, months)+
+      '<div class="dh">Сработавшие признаки</div>'+flagsHtml+checksHtml+
+    '</div>';
+  return box;
+}
+
+/* ---------- тепловая карта ---------- */
+function renderHeat(){
+  const host = $('#heat'); host.innerHTML='';
+  if(!S.an) return;
+  const months = S.data.months;
+  const sm = months.length>40 ? ' hc-sm' : '';
+  const labStep = months.length>40 ? 6 : 2;
+  const head = el('div','hrow hhead');
+  head.append(el('div','hid','№ ПУ'));
+  months.forEach((ym,i)=>head.append(el('div','hcell hm'+sm, i%labStep===0?ymLabel(ym):'')));
+  host.append(head);
+  const shown = S.an.results.slice(0,150);
+  shown.forEach(r=>{
+    const base = r.baseline!=null&&r.baseline>0 ? r.baseline : null;
+    const row = el('div','hrow');
+    const idc = el('div','hid mono','<span class="dot '+r.cls+'"></span>'+esc(r.meter.id)+(r.meter.dup?' ('+r.meter.dup+')':''));
+    idc.title='риск '+r.score;
+    row.append(idc);
+    r.meter.values.forEach((v,i)=>{
+      const c = el('div','hcell'+sm);
+      let bg='var(--panel2)', tip=ymLabel(months[i])+': ';
+      if(v==null){ bg='transparent'; tip+='нет данных'; c.classList.add('hnull'); }
+      else {
+        tip+=fmt(v,1)+' кВт·ч';
+        if(v<=EPS){ bg='rgba(240,91,74,.55)'; }
+        else if(base){
+          const rr=v/base;
+          if(rr<0.35) bg='rgba(240,91,74,.4)';
+          else if(rr<0.7) bg='rgba(242,182,60,.35)';
+          else if(rr>2.5) bg='rgba(111,179,255,.35)';
+        }
+      }
+      c.style.background=bg; c.title=r.meter.id+' · '+tip;
+      row.append(c);
+    });
+    row.addEventListener('click', ()=>{
+      S.tab='rank';
+      document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on', x.dataset.tab==='rank'));
+      document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('show', p.id==='pane-rank'));
+      S.open = {}; S.open[r.meter.id+'#'+(r.meter.dup||0)] = true;
+      renderRank();
+      setTimeout(()=>{ const t=document.querySelector('.openrow'); if(t) t.scrollIntoView({behavior:'smooth', block:'center'}); }, 30);
+    });
+    host.append(row);
+  });
+  if(S.an.results.length>shown.length) host.append(el('div','balrow mut','Показаны первые 150 ПУ по уровню риска (всего '+S.an.results.length+') — полный список во вкладке «Рейтинг риска» и в CSV-экспорте.'));
+  host.append(el('div','hleg','<span><i style="background:rgba(240,91,74,.55)"></i>ноль / &lt;35% базы</span><span><i style="background:rgba(242,182,60,.35)"></i>35–70% базы</span><span><i style="background:var(--panel2)"></i>норма</span><span><i style="background:rgba(111,179,255,.35)"></i>&gt;250% базы</span><span><i style="background:transparent;border:1px dashed var(--line)"></i>нет данных</span>'));
+}
+
+/* ---------- вкладка «Баланс» ---------- */
+function balSelKey(r){ return r.meter.id+'#'+(r.meter.dup||0); }
+
+function balChartSVG(months, sup, useVals, allowLine, scn, analyzed){
+  const W=880, H=300, L=64, R=14, T=16, B=42;
+  const n=months.length;
+  const known=[...sup,...useVals].filter(x=>x!=null).concat(scn?scn.filter(x=>x!=null):[]);
+  const mx=Math.max(...known,10)*1.06;
+  const X=i=>L+i*(W-L-R)/Math.max(1,n-1);
+  const Y=x=>T+(H-T-B)*(1-x/mx);
+  const half=(W-L-R)/Math.max(1,n-1)/2;
+  let grid='', yl='';
+  for(let k=0;k<=4;k++){
+    const val=mx*k/4, y=Y(val);
+    grid+='<line x1="'+L+'" y1="'+y.toFixed(1)+'" x2="'+(W-R)+'" y2="'+y.toFixed(1)+'" class="cgrid"/>';
+    yl+='<text x="'+(L-6)+'" y="'+(y+4).toFixed(1)+'" class="cyl">'+fmt(val)+'</text>';
+  }
+  const step=Math.ceil(n/10);
+  let xl='';
+  months.forEach((ym,i)=>{ if(i%step===0||i===n-1) xl+='<text x="'+X(i).toFixed(1)+'" y="'+(H-B+16)+'" class="cxl">'+ymLabel(ym)+'</text>'; });
+  // серые полосы: месяцы без тех. учёта (не анализируем)
+  let bands='';
+  for(let i=0;i<n;i++){
+    if(analyzed[i]) continue;
+    const x0=Math.max(L, X(i)-half), x1=Math.min(W-R, X(i)+half);
+    const why=sup[i]==null?'нет данных тех. учёта':'нет данных ПУ';
+    bands+='<rect x="'+x0.toFixed(1)+'" y="'+T+'" width="'+(x1-x0).toFixed(1)+'" height="'+(H-T-B)+'" class="bnull"><title>'+ymLabel(months[i])+': '+why+' — месяц не анализируется</title></rect>';
+  }
+  // заливки по сегментам соседних анализируемых месяцев
+  const seg=(a,b2,cls)=>{ // между рядами a (верх) и b (низ), только где a>b
+    let out='';
+    for(let i=0;i<n-1;i++){
+      if(!analyzed[i]||!analyzed[i+1]) continue;
+      if(a[i]==null||a[i+1]==null||b2[i]==null||b2[i+1]==null) continue;
+      if(a[i]<=b2[i] && a[i+1]<=b2[i+1]) continue;
+      const aa0=Math.max(a[i],b2[i]), aa1=Math.max(a[i+1],b2[i+1]);
+      out+='<polygon points="'+X(i).toFixed(1)+','+Y(aa0).toFixed(1)+' '+X(i+1).toFixed(1)+','+Y(aa1).toFixed(1)+' '+X(i+1).toFixed(1)+','+Y(b2[i+1]).toFixed(1)+' '+X(i).toFixed(1)+','+Y(b2[i]).toFixed(1)+'" class="'+cls+'"/>';
+    }
+    return out;
+  };
+  // дефицит: полезный отпуск ниже допустимого минимума
+  const exc=seg(allowLine, useVals.map((x,i)=>analyzed[i]?x:null), 'bexc');
+  // прирост сценария: между факт. полезным и «мог бы быть»
+  const gain=scn?seg(scn, useVals.map((x,i)=>analyzed[i]?x:null), 'bgain'):'';
+  const path=(arr,onlyAnalyzed)=>{
+    let d='',pen=false;
+    arr.forEach((x,i)=>{
+      if(x==null||(onlyAnalyzed&&!analyzed[i])){pen=false;return;}
+      d+=(pen?'L':'M')+X(i).toFixed(1)+' '+Y(x).toFixed(1)+' ';
+      pen=true;
+    });
+    return d;
+  };
+  let dots='';
+  months.forEach((ym,i)=>{
+    if(sup[i]!=null) dots+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(sup[i]).toFixed(1)+'" r="2.4" class="bdot"><title>'+ymLabel(ym)+' · отпуск в сеть: '+fmt(sup[i])+' кВт·ч</title></circle>';
+    if(useVals[i]!=null) dots+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(useVals[i]).toFixed(1)+'" r="2.4" class="budot"><title>'+ymLabel(ym)+' · полезный отпуск: '+fmt(useVals[i])+' кВт·ч'+(sup[i]!=null?' · небаланс '+fmt(sup[i]-useVals[i]):'')+'</title></circle>';
+    if(scn&&analyzed[i]&&scn[i]!=null&&useVals[i]!=null&&scn[i]>useVals[i]+0.5) dots+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(scn[i]).toFixed(1)+'" r="2" fill="var(--ok)"><title>'+ymLabel(ym)+' · со сценарием: '+fmt(scn[i])+' кВт·ч (+'+fmt(scn[i]-useVals[i])+')</title></circle>';
+  });
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'">'+bands+grid+yl+xl+exc+gain+
+    '<path d="'+path(allowLine,true)+'" class="ballow"/>'+
+    '<path d="'+path(sup)+'" class="bsup"/>'+
+    '<path d="'+path(useVals)+'" class="buse"/>'+
+    (scn?'<path d="'+path(scn,true)+'" class="bscn"/>':'')+
+    dots+'</svg>'+
+    '<div class="legend">'+
+      '<span><i class="lg" style="border-color:var(--warn)"></i>отпуск в сеть (тех. учёт)</span>'+
+      '<span><i class="lg" style="border-color:var(--acc)"></i>полезный отпуск (по ПУ)</span>'+
+      '<span><i class="lg" style="border-color:#8fa0b3;border-top-style:dashed"></i>допустимый минимум</span>'+
+      (scn?'<span><i class="lg" style="border-color:var(--ok);border-top-style:dashed"></i>полезный отпуск со сценарием</span>':'')+
+      '<span><i style="width:12px;height:12px;background:rgba(240,91,74,.16);display:inline-block"></i>сверхнорматив</span>'+
+      (scn?'<span><i style="width:12px;height:12px;background:rgba(70,192,138,.16);display:inline-block"></i>закрыто сценарием</span>':'')+
+      '<span><i style="width:12px;height:12px;background:rgba(100,116,139,.12);display:inline-block"></i>нет данных (тех. учёт / ПУ)</span>'+
+    '</div>';
+}
+
+function renderBalance(keepFocus){
+  const host=$('#bal');
+  host.innerHTML='';
+  if(!S.an) return;
+  const months=S.data.months, tb=S.an.tpBalance;
+  if(!tb.length){
+    host.append(el('div','note','Для вкладки «Баланс» нужна строка <b>«Отпуск в сеть ТП-…»</b> с помесячным расходом по вводу подстанции (тех. учёт). Добавьте её в файл — появится график «отпуск в сеть − полезный отпуск», настраиваемый допустимый уровень потерь и подбор сценариев: кто из потребителей мог бы закрывать разницу. Пример строки есть в шаблоне .xlsx.'));
+    return;
+  }
+  if(S.balGroup>=tb.length) S.balGroup=0;
+  const b=tb[S.balGroup];
+
+  if(tb.length>1){
+    const segw=el('div','rmode');
+    segw.append(el('span',null,'Подстанция:'));
+    const seg=el('div','seg');
+    tb.forEach((x,i)=>{
+      const bt=el('button', i===S.balGroup?'on':'', esc(x.group));
+      bt.addEventListener('click',()=>{ S.balGroup=i; S.balSel={}; renderBalance(); });
+      seg.append(bt);
+    });
+    segw.append(seg);
+    host.append(segw);
+  }
+  if(b.note) host.append(el('div','note bad',esc(b.note)));
+  {
+    const idsTxt = b.meterIds&&b.meterIds.length ? ' · № ПУ ввода: <b>'+b.meterIds.map(esc).join(', ')+'</b>' : '';
+    if(b.inputCount>1) host.append(el('div','note','Отпуск в сеть = <b>сумма '+b.inputCount+' вводов</b>: '+b.inputs.map(x=>esc(x.label)).join(' + ')+idsTxt+'. Месяц анализируется, только если данные есть по каждому вводу.'));
+    else if(idsTxt) host.append(el('div','note','Тех. учёт ввода'+idsTxt+'.'));
+  }
+  const sup=b.supplySeries, useVals=b.usefulSeries;
+  const analyzed=months.map((_,i)=>sup[i]!=null&&useVals[i]!=null);
+  const nAn=analyzed.filter(Boolean).length;
+  if(!nAn){
+    host.append(el('div','note bad','В строке «'+esc(b.label)+'» нет ни одного месяца с данными тех. учёта — анализировать нечего.'));
+    return;
+  }
+  const p=(S.cal.balPct!=null?S.cal.balPct:10)/100;
+  const allowLine=months.map((_,i)=>analyzed[i]?sup[i]*(1-p):null);
+  const excess=months.map((_,i)=>analyzed[i]?Math.max(0,(sup[i]-useVals[i])-sup[i]*p):0);
+  const excessSum=excess.reduce((a,c)=>a+c,0);
+  const supSum=months.reduce((a,_,i)=>a+(analyzed[i]?sup[i]:0),0);
+  const useSum=months.reduce((a,_,i)=>a+(analyzed[i]?useVals[i]:0),0);
+  const imbSum=supSum-useSum;
+
+  // кандидаты группы с помесячной оценкой недоучёта
+  const cands=S.an.results
+    .filter(r=>r.deficitSeries && (b.key==='__all__' || (r.meter.tp||'__all__')===b.key))
+    .map(r=>({r, key:balSelKey(r), contrib:months.reduce((s,_,i)=>s+(analyzed[i]?r.deficitSeries[i]:0),0)}))
+    .filter(c=>c.contrib>=1)
+    .sort((a,c)=>c.contrib-a.contrib);
+
+  const recOf=set=>{
+    const keys=new Set(set.map(c=>c.key));
+    return months.map((_,i)=>analyzed[i]?cands.reduce((s,c)=>s+(keys.has(c.key)?c.r.deficitSeries[i]:0),0):0);
+  };
+  const covOf=recArr=>months.reduce((s,_,i)=>s+Math.min(recArr[i],excess[i]),0);
+  const selected=cands.filter(c=>S.balSel[c.key]);
+  const rec=recOf(selected);
+  const recSum=rec.reduce((a,c)=>a+c,0);
+  const covered=covOf(rec);
+  const scn=selected.length?months.map((_,i)=>analyzed[i]?useVals[i]+rec[i]:null):null;
+
+  // KPI
+  const kwrap=el('div','balkpis');
+  const card=(val,lab,cls)=>{ const c=el('div','kpi '+(cls||'')); c.append(el('div','kv',val), el('div','kl',lab)); return c; };
+  const pctVal=supSum>0?imbSum/supSum*100:null;
+  kwrap.append(
+    card(fmt(supSum)+' кВт·ч','отпуск в сеть · '+nAn+' мес.'),
+    card(fmt(useSum)+' кВт·ч','полезный отпуск'),
+    card(fmt(imbSum)+' кВт·ч'+(pctVal!=null?' ('+fmt(pctVal,1)+'%)':''),'небаланс','k-amber'),
+    card(fmt(Math.round(excessSum))+' кВт·ч','сверхнорматив при '+fmt(S.cal.balPct)+'%','k-red'),
+  );
+  if(selected.length) kwrap.append(
+    card('+'+fmt(Math.round(recSum))+' кВт·ч','добавит сценарий ('+selected.length+' ПУ)','k-loss'),
+    card(excessSum>0?fmt(covered/excessSum*100)+'%':'—','сверхнорматива закрыто', covered/Math.max(1,excessSum)>=0.7?'k-loss':''),
+  );
+  host.append(kwrap);
+
+  // допустимый уровень потерь
+  const pr=el('div','bpct');
+  pr.append(el('span',null,'Допустимый уровень потерь (норматив):'));
+  const rng=document.createElement('input');
+  rng.type='range'; rng.min=0; rng.max=30; rng.step=1; rng.value=S.cal.balPct; rng.className='tr tr-num';
+  const vl=el('span','val',fmt(S.cal.balPct)+'%');
+  // input — только подпись (иначе слайдер пересоздаётся под зажатой мышью и драг рвётся);
+  // полный пересчёт — по change (отпускание мыши / шаг с клавиатуры)
+  rng.addEventListener('input',()=>{ S.cal.balPct=+rng.value; vl.textContent=fmt(S.cal.balPct)+'%'; });
+  rng.addEventListener('change',()=>{ saveCal(); renderBalance(true); });
+  pr.append(rng, vl, el('span','mut','всё, что выше этой доли отпуска в сеть, — сверхнормативные потери (красная заливка)'));
+  host.append(pr);
+  if(keepFocus) rng.focus();
+
+  // график
+  const ch=el('div','bchart');
+  ch.innerHTML=balChartSVG(months, sup, useVals, allowLine, scn, analyzed);
+  host.append(ch);
+  const noSup=months.filter((_,i)=>sup[i]==null).length;
+  const noUse=months.filter((_,i)=>sup[i]!=null&&useVals[i]==null).length;
+  if(noSup||noUse) host.append(el('div','balrow mut',
+    [noSup?'Без тех. учёта: '+noSup+' мес.':null, noUse?'без данных ПУ: '+noUse+' мес.':null].filter(Boolean).join(', ')+
+    ' — серые полосы на графике, из сумм и подбора исключены.'));
+
+  // авто-сценарии
+  const scenarios=[];
+  if(excessSum>0){
+    const remv=excess.slice(); const pick=[]; const pool=cands.slice();
+    for(let it=0; it<8 && pool.length; it++){
+      // выбираем ПУ с максимальным «полезным» вкладом, штрафуя перелёт:
+      // закрыть разницу точнее важнее, чем закрыть её с многократным запасом
+      let best=null, bg=0, bi=-1;
+      pool.forEach((c,idx)=>{
+        const gain=months.reduce((s,_,i)=>s+(analyzed[i]?Math.min(c.r.deficitSeries[i],remv[i]):0),0);
+        const score=gain-0.2*Math.max(0,c.contrib-gain);
+        if(score>bg){ bg=score; best=c; bi=idx; }
+      });
+      if(!best || bg<Math.max(50,excessSum*0.02)) break;
+      pick.push(best); pool.splice(bi,1);
+      months.forEach((_,i)=>{ if(analyzed[i]) remv[i]=Math.max(0,remv[i]-best.r.deficitSeries[i]); });
+      if(1-remv.reduce((a,c)=>a+c,0)/excessSum>=0.95) break;
+    }
+    if(pick.length) scenarios.push({name:'Автоподбор под сверхнорматив', hint:'жадный алгоритм: добирает ПУ, пока разница не закрыта', set:pick});
+  }
+  const sync=cands.filter(c=>{
+    const d=months.map((_,i)=>analyzed[i]?c.r.deficitSeries[i]:null);
+    const im=months.map((_,i)=>analyzed[i]?(sup[i]-useVals[i]):null);
+    return pearson(d,im)>=0.5;
+  });
+  if(sync.length) scenarios.push({name:'Синхронные с небалансом', hint:'дефицит этих ПУ растёт в те же месяцы, что и небаланс', set:sync});
+  const reds=cands.filter(c=>c.r.cls==='red');
+  if(reds.length) scenarios.push({name:'Красная зона целиком', hint:'все кандидаты из красной зоны рейтинга', set:reds});
+  const top3=cands.slice(0,Math.min(3,cands.length));
+  if(top3.length) scenarios.push({name:'Топ-'+top3.length+' по объёму', hint:'самые крупные оценки недоучёта', set:top3});
+
+  host.append(el('div','dh','Авто-сценарии — кто мог бы закрывать разницу'));
+  if(excessSum<=0 && !selected.length){
+    host.append(el('div','note ok','При пороге '+fmt(S.cal.balPct)+'% сверхнормативных потерь нет — небаланс подстанции в допуске. Можно снизить порог и посмотреть, кто «съедает» остаток, или работать по рейтингу.'));
+  } else if(!cands.length){
+    host.append(el('div','note','Кандидатов нет: ни у одного ПУ этой подстанции нет оценки недоучёта. Сценарии появятся, когда рейтинг найдёт признаки с оценкой объёма (S1–S3, S13, S14 и др.).'));
+  }
+  if(cands.length && scenarios.length){
+    const sb=el('div','scenbox');
+    scenarios.forEach(sc=>{
+      const recS=recOf(sc.set), covS=covOf(recS), addS=recS.reduce((a,c)=>a+c,0);
+      const active=selected.length===sc.set.length && sc.set.every(c=>S.balSel[c.key]);
+      const card2=el('div','scen'+(active?' onb':''));
+      card2.innerHTML='<b>'+esc(sc.name)+'</b><div class="meta">'+sc.set.length+' ПУ · +'+fmt(Math.round(addS))+' кВт·ч'+(excessSum>0?' · закрывает '+fmt(covS/excessSum*100)+'% сверхнорматива':'')+'<br>'+esc(sc.hint)+' — '+esc(sc.set.slice(0,4).map(c=>c.r.meter.id).join(', '))+(sc.set.length>4?'…':'')+'</div>';
+      card2.addEventListener('click',()=>{
+        S.balSel={};
+        if(!active) sc.set.forEach(c=>S.balSel[c.key]=true);
+        renderBalance();
+      });
+      sb.append(card2);
+    });
+    host.append(sb);
+  }
+
+  // ручной список кандидатов
+  if(cands.length){
+    host.append(el('div','dh','Кандидаты («наши воры») — отметьте галочками'));
+    const maxShow=40;
+    const visible=cands.filter((c,i)=>i<maxShow || S.balSel[c.key]);
+    visible.forEach(c=>{
+      const on=!!S.balSel[c.key];
+      const row=el('label','bcand'+(on?' onb':''));
+      const cb=document.createElement('input');
+      cb.type='checkbox'; cb.checked=on;
+      cb.addEventListener('change',()=>{
+        if(cb.checked) S.balSel[c.key]=true; else delete S.balSel[c.key];
+        renderBalance();
+      });
+      const m=c.r.meter;
+      const alone=excessSum>0?covOf(recOf([c]))/excessSum*100:null;
+      row.append(cb);
+      row.append(el('span',null,'<span class="dot '+c.r.cls+'"></span><span class="mono">'+esc(m.id)+'</span>'+
+        (m.ctype?'<span class="chip typechip">'+(m.ctype==='ul'?'юр':'физ')+'</span>':'')+
+        (m.dup?'<span class="chip dupchip">дубль '+m.dup+'</span>':'')+
+        ' <span class="mut">'+esc(c.r.flags.slice(0,3).map(f=>f.code).join(' '))+'</span>'));
+      const amt=el('span','amt','+'+fmt(Math.round(c.contrib))+' кВт·ч');
+      row.append(amt);
+      if(alone!=null) row.append(el('span','cov','· один закрывает '+fmt(alone)+'%'));
+      row.addEventListener('click',e=>{ if(e.target!==cb){ e.preventDefault(); cb.checked=!cb.checked; cb.dispatchEvent(new Event('change')); } });
+      host.append(row);
+    });
+    if(cands.length>visible.length) host.append(el('div','balrow mut','Показаны первые '+maxShow+' кандидатов по объёму + все выбранные (всего '+cands.length+').'));
+  }
+  host.append(el('div','note','Помесячные объёмы недоучёта — оценки из рейтинга (нормированы к итоговой оценке каждого ПУ). Сценарий — это гипотеза для проверки на местах, а не расчёт для доначисления: совпадение объёмов и месяцев указывает, где искать, но подтверждает только акт.'));
+}
+
+/* ---------- вкладка «Алгоритмы» ---------- */
+const ALG_DOC = [
+ ['S1','Спящий → пробуждение','≥6 нулевых месяцев с начала ряда, затем ≥4 мес. устойчивого расхода с медианой ≥50 кВт·ч.','Жилой объект не появляется из ниоткуда: если после года тишины пошли стабильные объёмы, до «пробуждения» энергия почти наверняка шла мимо учёта.','до 50', 'Недоучёт ≈ медиана после пробуждения × число нулевых месяцев.'],
+ ['S2','Рваный профиль','20–85% нулей, чередующихся со всплесками ≥4× типичного значения, ≥3 перехода «ноль↔расход»; бонус за нули зимой.','Учёт «оживает» только при контрольных съёмах — всплеск и есть накопленный реальный расход, остальное время прибор обойдён.','до 45','Недоучёт ≈ медиана ненулевых × число нулевых месяцев.'],
+ ['S3','Ступенчатое падение','Существует точка, после которой медиана падает до ≤80% прежней и держится: глубокая ступень (≤50%) — по доле месяцев ИЛИ по медианам годовых блоков (сезонные пики не маскируют ступень); неглубокая (65–80%) — только при выдержке от года, вес растёт за 2 и 4 года. Бонус за ступень 1,5+ года; если группа вокруг той же даты тоже просела — балл снижается.','Магнит, шунт или обвод дают именно ступень: резко вниз — и новый «потолок» надолго. Либо объект обесточен — тогда сверить с договором. По выборке подтверждённых нарушений это признак №1.','12–50','Недоучёт ≈ Σ(прежняя база − факт) после точки перелома.'],
+ ['S3б','Провал с восстановлением','Окно 4–24 мес. с медианой ≤50% от уровня по обе стороны (оба «берега» ≥100 кВт·ч); длинный провал (год и больше) весит больше.','Классика «вмешательство → контрольная проверка»: до и после провала расход нормальный. Если доначисления за провал не было — его пора считать.','16–34','Недоучёт ≈ Σ(уровень до провала − факт) внутри окна.'],
+ ['S4','Затухание расхода','Медиана последних 4 мес. ≤35% собственной базы (база ≥40 кВт·ч).','Плавное сползание к нулю без сезонной причины — либо начали воровать, либо объект пустеет. Требует уточнения статуса.','8–14',''],
+ ['S5','Нули при живой группе','≥3 нулевых месяца, когда медиана группы ≥25 кВт·ч; нули зимой весят больше.','Когда все соседи по ТП потребляют, а этот ПУ — нет, «нет данных» превращается в «нет учёта».','до 14',''],
+ ['S6','Замороженные показания','≥4 мес. подряд одно и то же ненулевое значение, либо разброс CV ≤3% при ≥8 мес.','Живая нагрузка так себя не ведёт: либо счётный механизм стоит, либо из месяца в месяц переписывают одну цифру.','11–14',''],
+ ['S7','Круглые числа','≥70% значений кратны 50 при ≥8 ненулевых мес.','Показания передаются «на глаз», без съёма — сам по себе не криминал, но повод для контрольного обхода.','6 (слабый)',''],
+ ['S8','Ниже соседей','Средний расход <30% медианы группы и ниже 10-го перцентиля (группа ≥8 ПУ, медиана ≥60).','Возможно пустующее жильё, а возможно — обвод. Работает только в связке с другими признаками.','8 (слабый)',''],
+ ['S9','Против сезона','Отношение зима/лето ≤60% от группового при выраженной зимней сезонности группы.','У соседей зимой расход растёт, здесь проваливается — типично для сезонного «прикручивания» учёта.','10',''],
+ ['S10','Мощность простаивает','Разрешённая мощность ≥10 кВт при фактических ≤15 кВт·ч/мес; либо для крупных подключений расход — мизерная доля мощности (от 30 кВт — <1,5%, от 100 кВт — <3%, от 200 кВт — <5% теоретического потолка).','Подключение есть, расхода почти нет: либо мощность «бумажная», либо часть нагрузки запитана мимо ПУ. Проверить договор и схему присоединения.','7–8 (слабый)',''],
+ ['S11','Синхронность с небалансом ТП','Корреляция «провалов» ПУ с ростом небаланса подстанции ≥0,6 (нужна строка «Отпуск в сеть»).','Украденное не исчезает — оно всплывает в потерях ТП. Совпадение по месяцам почти однозначно указывает виновника.','12',''],
+ ['S12','Разовый всплеск в мёртвом ряду','≥60% нулей, 1–2 крупных значения (суммарно ≥500 кВт·ч) и тишина вокруг.','Похоже на доначисление по акту или съём накопленного при проверке — поднять документы и понять, почему после снова ноль.','12 (слабый)',''],
+ ['S13','Ступенчатый рост с низкой базы','Долгий стабильно низкий уровень, затем устойчивый рост в ≥2,5 раза. Резкий скачок (за 4 мес. более чем вдвое) — сильный признак; плавный многолетний рост в ≥4 раза — умеренный; плавный меньше — слабый (бизнес мог вырасти).','Зеркало ступенчатого падения: объект, который «вдруг» стал потреблять в разы больше, чаще всего потреблял столько и раньше — мимо учёта. Точку скачка сверить с заменой ПУ/проверкой: недоучёт был ДО неё. По выборке подтверждённых случаев — второй по частоте признак.','12–28','Недоучёт ≈ (новый уровень − старый) × месяцы до скачка.'],
+ ['S14','Многолетнее угасание','Годовые медианы ползут вниз без резкой ступени: минимум 4 года данных, падение с пикового года на ≥40% (сильный сигнал ≥70%), снижение подтверждается минимум два года подряд. Если группа просела так же — балл снижается.','Ловит «аккуратное» хищение, наращиваемое постепенно, которое не даёт ступени и потому невидимо для S3. Альтернатива — медленное сворачивание деятельности: проверяется состоянием объекта на месте.','16–28','За последний год ≈ (пиковый уровень − текущий) × 12.'],
+];
+function renderAlgs(){
+  const host=$('#algs');
+  host.innerHTML = '<div class="note">Скоринг 0–100: сумма баллов сработавших признаков. <b>≥'+CLS.red+' — красная зона</b> (проверка в приоритете), <b>'+CLS.amber+'–'+(CLS.red-1)+' — наблюдение</b>, ниже — норма.'+(calDirty()?' <b>Пороги и веса изменены калибровкой</b> (вкладка «Методика проверки», раздел «Калибровка») — ниже описан стандарт v3.':' Ужесточить или смягчить любой признак можно во вкладке «Методика проверки», раздел «Калибровка».')+' Полностью нулевые ряды вынесены в отдельный класс. Слабые признаки (S7, S8, S10, S12, плавный S13) поодиночке дают не больше 15 баллов. Сравнения «до/после» сверяются с динамикой группы — по ТП, а при маленьких группах по всему файлу: общий спад (сезон, экономика) в полный балл не засчитывается. Пороги и веса v3 откалиброваны на выборке подтверждённых нарушений (390 ПУ, 7 лет наблюдений): 82% подтверждённых нарушителей попадают в красную или жёлтую зону. Все оценки недоучёта — ориентировочные, для приоритизации, а не для доначисления, и ограничены сверху физическим потолком диапазона техприсоединения (верхняя граница диапазона мощности × 730 ч − оплаченный объём; ≤10 кВт — 0,22 кВ, выше — 0,4 кВ, диапазоны из реестра СИП).</div>' +
+  ALG_DOC.map(a=>{
+    const off = TUNE_ORDER.some(k=>S.cal.algOff[k] && ALG_META[k].code===a[0]);
+    return '<div class="alg'+(off?' algoff':'')+'"><div class="algh"><span class="chip">'+a[0]+'</span><b>'+a[1]+'</b>'+(off?'<span class="chip dupchip">отключён</span>':'')+'<span class="pts">'+a[4]+' б.</span></div>'+
+    '<div class="algrow"><span>Критерий</span><div>'+a[2]+'</div></div>'+
+    '<div class="algrow"><span>Почему работает</span><div>'+a[3]+'</div></div>'+
+    (a[5]?'<div class="algrow"><span>Оценка объёма</span><div>'+a[5]+'</div></div>':'')+
+  '</div>'; }).join('');
+}
+
+/* ---------- калибровка: «крутилки» в Методике ---------- */
+const LEVEL_NAMES = {'-2':'намного мягче','-1':'мягче','0':'стандарт v3','1':'строже','2':'намного строже'};
+const TUNE_ORDER = ['sleeper','ragged','step','valley','fade','zeroAlive','frozen','round','peers','season','idle','imb','lone','stepup','slow'];
+const TUNE_HINT = {
+  sleeper:  p=>'нужно ≥'+p.minZeros+' мес. нулей и уровень после «пробуждения» ≥'+p.minPost+' кВт·ч/мес',
+  ragged:   p=>'всплеск ≥'+fmt(p.minSpike,1)+'× типичного, переходов «ноль↔расход» ≥'+p.minTrans,
+  step:     p=>'ступень засчитывается при падении до ≤'+Math.round(p.rMax*100)+'% прежнего уровня',
+  valley:   p=>'провал засчитывается при уровне ≤'+Math.round(p.rMax*100)+'% от «берегов»',
+  fade:     p=>'последние месяцы ≤'+Math.round(p.rMax*100)+'% собственной базы',
+  zeroAlive:p=>'от '+p.minZeros+' нулевых мес. при живом потреблении группы',
+  frozen:   p=>'от '+p.minRun+' мес. одинаковых показаний, либо разброс CV ≤'+fmt(p.maxCV,1)+'%',
+  round:    p=>'кратных 50 должно быть ≥'+Math.round(p.minShare*100)+'% значений',
+  peers:    p=>'средний расход ниже '+Math.round(p.maxFrac*100)+'% медианы группы',
+  season:   p=>'зима/лето ≤'+Math.round(p.maxOwn*100)+'% от группового отношения',
+  idle:     p=>'порог «почти нет расхода» — '+p.maxAvg+' кВт·ч/мес (для крупных мощностей масштабируется)',
+  imb:      p=>'корреляция провалов с небалансом ТП ≥'+fmt(p.minCorr,2),
+  lone:     p=>'разовый объём от '+fmt(p.minSum)+' кВт·ч',
+  stepup:   p=>'устойчивый рост уровня в ≥'+fmt(p.minJump,1)+' раза',
+  slow:     p=>'падение годовых уровней до ≤'+Math.round(p.rMax*100)+'%',
+};
+
+function tuneChanged(){
+  saveCal(); applyCal(); markCal();
+  if(S.data) recompute(true); else renderAlgs();
+}
+
+function tunerNumRow(title, key, min, max, hintText){
+  const row = el('div','trow');
+  const head = el('div','th','<b>'+title+'</b><span class="tlev mono" style="letter-spacing:0;font-size:13px">'+S.cal[key]+'</span>');
+  const range = document.createElement('input');
+  range.type='range'; range.min=min; range.max=max; range.step=1; range.value=S.cal[key]; range.className='tr tr-num';
+  const hint = el('div','thint', hintText);
+  range.addEventListener('input', ()=>{
+    let v = +range.value;
+    if(key==='red'){ S.cal.red = v; if(S.cal.amber > v-5) S.cal.amber = v-5; }
+    else { v = Math.min(v, S.cal.red-5); range.value = v; S.cal.amber = v; }
+    head.querySelector('.tlev').textContent = String(+range.value);
+    tuneChanged();
+  });
+  // порог red может утянуть за собой amber — по отпусканию перерисовать блок целиком
+  if(key==='red') range.addEventListener('change', renderTuner);
+  row.append(head, range, hint);
+  return row;
+}
+
+function tunerAlgRow(key){
+  const meta = ALG_META[key];
+  const off0 = !!S.cal.algOff[key];
+  const row = el('div','trow'+(off0?' toff':''));
+  const head = el('div','th');
+  const cb = document.createElement('input');
+  cb.type='checkbox'; cb.checked=!off0; cb.className='talg';
+  cb.title='Включить / исключить признак из анализа — адаптация методики под район (промзона, газ и т.п.)';
+  head.append(cb, el('span',null,'<span class="chip">'+meta.code+'</span> <b>'+esc(meta.title)+'</b>'), el('span','tlev'));
+  const range = document.createElement('input');
+  range.type='range'; range.min=-2; range.max=2; range.step=1; range.value=S.cal.levels[key]||0; range.className='tr';
+  range.disabled = off0;
+  const scale = el('div','tscale','<span>мягче</span><span>стандарт v3</span><span>строже</span>');
+  const hint = el('div','thint');
+  const paint = ()=>{
+    const s = +range.value;
+    const p = buildTune({[key]:s})[key];
+    const lab = head.querySelector('.tlev');
+    if(S.cal.algOff[key]){ lab.textContent='отключён'; lab.className='tlev off'; }
+    else { lab.textContent = LEVEL_NAMES[String(s)]; lab.className = 'tlev'+(s<0?' soft':s>0?' hard':''); }
+    hint.textContent = TUNE_HINT[key](p)+' · вес признака ×'+String(p.ptsF).replace('.',',');
+  };
+  paint();
+  range.addEventListener('input', ()=>{
+    S.cal.levels[key] = +range.value;
+    paint();
+    tuneChanged();
+  });
+  cb.addEventListener('change', ()=>{
+    if(cb.checked) delete S.cal.algOff[key]; else S.cal.algOff[key]=true;
+    row.classList.toggle('toff', !cb.checked);
+    range.disabled = !cb.checked;
+    paint();
+    tuneChanged();
+  });
+  row.append(head, range, scale, hint);
+  return row;
+}
+
+function renderTuner(){
+  const host = document.getElementById('tuner');
+  if(!host) return;
+  host.innerHTML = '';
+  const glob = el('div','tglob');
+  glob.append(
+    tunerNumRow('Порог красной зоны (риск ≥)','red',30,70,'выше порог — меньше красная зона; стандарт v3 — 45'),
+    tunerNumRow('Порог жёлтой зоны (риск ≥)','amber',10,40,'всё, что ниже, — «норма»; стандарт v3 — 20 (держится минимум на 5 ниже красного)')
+  );
+  host.append(glob);
+  TUNE_ORDER.forEach(key=>host.append(tunerAlgRow(key)));
+  const foot = el('div','treset');
+  const rb = el('button','btn','Вернуть стандарт v3');
+  rb.addEventListener('click', ()=>{
+    const bp = S.cal.balPct; // норматив потерь — настройка вкладки «Баланс», кнопка её не обещает сбрасывать
+    S.cal = defaultCal();
+    S.cal.balPct = bp;
+    renderTuner();
+    renderBooster();
+    syncZoneUI();
+    tuneChanged();
+  });
+  foot.append(rb, el('span','mut','Настройки хранятся локально в этом браузере и применяются сразу. Кнопка сбрасывает пороги, веса, бусты приоритета и режим зон.'));
+  host.append(foot);
+}
+
+/* ---------- экспорт ---------- */
+function exportCSV(){
+  if(!S.an) return;
+  const rows = [['Место','Класс','№ ПУ','Тип','Дубль','Мощность кВт','Средний кВт·ч/мес','Сумма кВт·ч','Риск 0-100','Буст','Признаки','Оценка недоучёта кВт·ч','Комментарий']];
+  S.an.results.forEach((r,i)=>{
+    rows.push([i+1, CLS_RU[r.cls], '="'+r.meter.id+'"', r.meter.ctype==='ul'?'юр':r.meter.ctype==='fl'?'физ':'', r.meter.dup?(r.meter.dup+'/'+r.meter.dupOf):'', r.meter.power??'', Math.round(mean(r.meter.values)??0), r.total, r.score, r.boostPts||'',
+      r.flags.map(f=>f.code+' '+f.title).join(' | '), r.lossKwh||'', r.flags.map(f=>f.detail).join(' || ').replace(/\u00A0/g,' ')]);
+  });
+  const csv = '\uFEFF' + rows.map(r=>r.map(c=>{ const s=String(c??''); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = 'reiting_riska_PU.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+function downloadTemplate(){
+  if(typeof XLSX === 'undefined'){ alert('Для генерации шаблона нужна библиотека Excel — откройте страницу с интернетом.'); return; }
+  const now = new Date();
+  const head = ['№ ПУ','ТП','Разрешенная мощность, кВт','Тип (юр/физ)','Напряжение, кВ (0,22 / 0,4; пусто = авто)','Абонент','Адрес'];
+  const start = new Date(now.getFullYear()-3, now.getMonth(), 1);
+  const monthCnt = 37;
+  for(let i=0;i<monthCnt;i++){
+    const d = new Date(start.getFullYear(), start.getMonth()+i, 1);
+    head.push(['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'][d.getMonth()]+' '+d.getFullYear()+', кВт·ч');
+  }
+  const ex1 = ['230102000001','ТП-000',15,'физ. лицо','','Пример: обычный абонент (напряжение пусто — авто: 0,4)','ул. Примерная, 1', ...Array.from({length:monthCnt},(_,i)=>200+Math.round(80*Math.cos((i%12)/12*2*Math.PI)))];
+  const ex2 = ['230102000002','ТП-000',30,'юр. лицо','0,4','Пример: ООО «Организация»','ул. Примерная, 2', ...Array.from({length:monthCnt},(_,i)=>900+Math.round(150*Math.cos((i%12)/12*2*Math.PI)))];
+  const ex3 = ['230102000003','ТП-000',15,'физ. лицо','0,22','Пример: однофазный ввод, несмотря на 15 кВт','ул. Примерная, 3', ...Array.from({length:monthCnt},(_,i)=>150+Math.round(60*Math.cos((i%12)/12*2*Math.PI)))];
+  const ex4 = ['Отпуск в сеть ТП-000 Т1 ПУ № 100200301','ТП-000','','','','ввод 1 (тех. учёт) — номер ПУ пишите прямо в этой строке','', ...Array.from({length:monthCnt},()=> '')];
+  const ex5 = ['Отпуск в сеть ТП-000 Т2 ПУ № 100200302','ТП-000','','','','ввод 2 — при двух тех. учётах строки Т1 и Т2 суммируются','', ...Array.from({length:monthCnt},()=> '')];
+  const ws = XLSX.utils.aoa_to_sheet([head, ex1, ex2, ex3, ex4, ex5]);
+  ws['!cols'] = head.map((h,i)=>({wch: i<7?22:12}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Потребление');
+  XLSX.writeFile(wb, 'Shablon_potrebleniya_PU.xlsx');
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+
+</script>
+</body>
+</html>
