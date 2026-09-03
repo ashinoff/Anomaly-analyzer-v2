@@ -388,10 +388,27 @@ h1 .bolt{
 .odo .w.red b i{color:#fff}
 .odo .w:nth-child(3) b{transform:translateY(-120px)}
 .odo .w:nth-child(4) b{transform:translateY(-30px)}
-.odo .w:nth-child(5) b{animation:odoRoll 96s steps(10,end) infinite}
+/* Предпоследний (белый) барабан — механический перенос: держится, затем ПЛАВНО
+   прокручивается на 1 цифру ровно когда красный проходит полный оборот (9→0).
+   100s = 10 переносов по 10s (период красного), поэтому они синхронны. */
+.odo .w:nth-child(5) b{animation:odoCarry 100s linear infinite}
+/* Последний (красный) — плавно и непрерывно катится, полный оборот за 10s. */
 .odo .w:nth-child(6) b{animation:odoRoll 10s linear infinite}
 .meterbox .unit{font:700 10px/1 var(--cond);letter-spacing:.12em;color:rgba(233,245,253,.9);text-transform:uppercase}
 @keyframes odoRoll{from{transform:translateY(0)}to{transform:translateY(-300px)}}
+@keyframes odoCarry{
+  0%,8%{transform:translateY(0)}
+  10%,18%{transform:translateY(-30px)}
+  20%,28%{transform:translateY(-60px)}
+  30%,38%{transform:translateY(-90px)}
+  40%,48%{transform:translateY(-120px)}
+  50%,58%{transform:translateY(-150px)}
+  60%,68%{transform:translateY(-180px)}
+  70%,78%{transform:translateY(-210px)}
+  80%,88%{transform:translateY(-240px)}
+  90%,98%{transform:translateY(-270px)}
+  100%{transform:translateY(-300px)}
+}
 @media (prefers-reduced-motion:reduce){.odo .w b{animation:none!important}}
 @media (max-width:1024px){.meterbox{display:none}.head{padding-right:22px}}
 
